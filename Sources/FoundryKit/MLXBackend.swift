@@ -206,7 +206,7 @@ internal final class MLXBackend: FoundryBackend, @unchecked Sendable {
     
     private func extractSchema<T: Generable>(from type: T.Type) throws -> [String: Any] {
         // Check if the type conforms to StructuredOutput for custom schema
-        if let structuredType = type as? StructuredOutput.Type {
+        if let structuredType = type as? any StructuredOutput.Type {
             return structuredType.jsonSchema
         }
         
@@ -223,7 +223,7 @@ internal final class MLXBackend: FoundryBackend, @unchecked Sendable {
         
         // Check for example if available
         var example: String? = nil
-        if let type = currentGenerationType as? StructuredOutput.Type {
+        if let type = currentGenerationType as? any StructuredOutput.Type {
             example = type.exampleJSON
         }
         
@@ -270,18 +270,9 @@ internal final class MLXBackend: FoundryBackend, @unchecked Sendable {
                 }
             }
             
-            // If direct decoding fails, try using GeneratedContent conversion
-            if let convertibleType = type as? ConvertibleFromGeneratedContent.Type {
-                // Create a GeneratedContent wrapper
-                let json = try JSONSerialization.jsonObject(with: jsonData)
-                // This would need proper GeneratedContent construction
-                // For now, throw an error indicating partial implementation
-                throw FoundryGenerationError.decodingFailure(
-                    FoundryGenerationError.Context(
-                        debugDescription: "GeneratedContent conversion not yet implemented"
-                    )
-                )
-            }
+            // Note: All Generable types conform to ConvertibleFromGeneratedContent
+            // This is a placeholder for future GeneratedContent conversion
+            // For now, throw an error indicating partial implementation
             
             throw FoundryGenerationError.decodingFailure(
                 FoundryGenerationError.Context(

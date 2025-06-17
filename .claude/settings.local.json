@@ -4,7 +4,8 @@
       "Bash(swift build)",
       "Bash(find:*)",
       "Bash(grep:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": []
   }
