@@ -83,7 +83,7 @@ internal final class MLXBackend: FoundryBackend, @unchecked Sendable {
         generating type: Content.Type,
         includeSchemaInPrompt: Bool,
         options: FoundryGenerationOptions
-    ) async throws -> BackendResponse<Content> where Content: Generable {
+    ) async throws -> BackendResponse<Content> where Content: Generable & Sendable {
         await loadModelIfNeeded()
         
         guard let chatSession = self.chatSession else {
@@ -130,7 +130,7 @@ internal final class MLXBackend: FoundryBackend, @unchecked Sendable {
         generating type: Content.Type,
         includeSchemaInPrompt: Bool,
         options: FoundryGenerationOptions
-    ) async throws -> BackendResponse<Content> where Content: Generable {
+    ) async throws -> BackendResponse<Content> where Content: Generable & Sendable {
         let promptString = convertPromptToString(prompt)
         return try await respond(
             to: promptString,
@@ -145,7 +145,7 @@ internal final class MLXBackend: FoundryBackend, @unchecked Sendable {
         generating type: Content.Type,
         includeSchemaInPrompt: Bool,
         options: FoundryGenerationOptions
-    ) -> any AsyncSequence<Content.PartiallyGenerated, any Error> where Content: Generable {
+    ) -> any AsyncSequence<Content.PartiallyGenerated, any Error> where Content: Generable & Sendable {
         return MLXStreamSequence<Content>(
             backend: self,
             prompt: prompt,
@@ -160,7 +160,7 @@ internal final class MLXBackend: FoundryBackend, @unchecked Sendable {
         generating type: Content.Type,
         includeSchemaInPrompt: Bool,
         options: FoundryGenerationOptions
-    ) -> any AsyncSequence<Content.PartiallyGenerated, any Error> where Content: Generable {
+    ) -> any AsyncSequence<Content.PartiallyGenerated, any Error> where Content: Generable & Sendable {
         let promptString = convertPromptToString(prompt)
         return streamResponse(
             to: promptString,
@@ -282,7 +282,7 @@ internal final class MLXBackend: FoundryBackend, @unchecked Sendable {
 }
 
 /// AsyncSequence implementation for MLX streaming.
-private struct MLXStreamSequence<Content: Generable>: AsyncSequence {
+private struct MLXStreamSequence<Content: Generable & Sendable>: AsyncSequence {
     typealias Element = Content.PartiallyGenerated
     
     private let backend: MLXBackend

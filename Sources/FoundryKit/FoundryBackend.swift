@@ -27,7 +27,7 @@ internal protocol FoundryBackend: Sendable {
         generating type: Content.Type,
         includeSchemaInPrompt: Bool,
         options: FoundryGenerationOptions
-    ) async throws -> BackendResponse<Content> where Content: Generable
+    ) async throws -> BackendResponse<Content> where Content: Generable & Sendable
     
     /// Generates a structured response to a Prompt.
     func respond<Content>(
@@ -35,7 +35,7 @@ internal protocol FoundryBackend: Sendable {
         generating type: Content.Type,
         includeSchemaInPrompt: Bool,
         options: FoundryGenerationOptions
-    ) async throws -> BackendResponse<Content> where Content: Generable
+    ) async throws -> BackendResponse<Content> where Content: Generable & Sendable
     
     /// Streams a structured response to a string prompt.
     func streamResponse<Content>(
@@ -43,7 +43,7 @@ internal protocol FoundryBackend: Sendable {
         generating type: Content.Type,
         includeSchemaInPrompt: Bool,
         options: FoundryGenerationOptions
-    ) -> any AsyncSequence<Content.PartiallyGenerated, any Error> where Content: Generable
+    ) -> any AsyncSequence<Content.PartiallyGenerated, any Error> where Content: Generable & Sendable
     
     /// Streams a structured response to a Prompt.
     func streamResponse<Content>(
@@ -51,7 +51,7 @@ internal protocol FoundryBackend: Sendable {
         generating type: Content.Type,
         includeSchemaInPrompt: Bool,
         options: FoundryGenerationOptions
-    ) -> any AsyncSequence<Content.PartiallyGenerated, any Error> where Content: Generable
+    ) -> any AsyncSequence<Content.PartiallyGenerated, any Error> where Content: Generable & Sendable
 }
 
 /// Internal response type for backends.

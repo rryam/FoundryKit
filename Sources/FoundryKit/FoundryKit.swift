@@ -1,6 +1,7 @@
 import Foundation
+
 #if canImport(FoundationModels)
-import FoundationModels
+  import FoundationModels
 #endif
 
 // MARK: - Public API
@@ -28,81 +29,112 @@ import FoundationModels
 // MARK: - Re-exported Foundation Models Types
 
 #if canImport(FoundationModels)
-/// Re-export Foundation Models types for convenience
-public typealias Generable = FoundationModels.Generable
-public typealias GeneratedContent = FoundationModels.GeneratedContent
-public typealias GenerationGuide = FoundationModels.GenerationGuide
-public typealias GenerationSchema = FoundationModels.GenerationSchema
-public typealias Instructions = FoundationModels.Instructions
-public typealias InstructionsBuilder = FoundationModels.InstructionsBuilder
-public typealias InstructionsRepresentable = FoundationModels.InstructionsRepresentable
-public typealias Prompt = FoundationModels.Prompt
-public typealias PromptBuilder = FoundationModels.PromptBuilder
-public typealias PromptRepresentable = FoundationModels.PromptRepresentable
-public typealias Transcript = FoundationModels.Transcript
-public typealias Tool = FoundationModels.Tool
-public typealias Guardrails = FoundationModels.LanguageModelSession.Guardrails
-public typealias ConvertibleFromGeneratedContent = FoundationModels.ConvertibleFromGeneratedContent
-public typealias ConvertibleToGeneratedContent = FoundationModels.ConvertibleToGeneratedContent
-public typealias GenerationID = FoundationModels.GenerationID
+  /// Re-export Foundation Models types for convenience with Foundry suffix
+  public typealias FoundryGenerable = FoundationModels.Generable
+  public typealias FoundryGeneratedContent = FoundationModels.GeneratedContent
+  public typealias FoundryGenerationGuide = FoundationModels.GenerationGuide
+  public typealias FoundryGenerationSchema = FoundationModels.GenerationSchema
+  public typealias FoundryInstructions = FoundationModels.Instructions
+  public typealias FoundryInstructionsBuilder = FoundationModels.InstructionsBuilder
+  public typealias FoundryInstructionsRepresentable = FoundationModels.InstructionsRepresentable
+  public typealias FoundryPrompt = FoundationModels.Prompt
+  public typealias FoundryPromptBuilder = FoundationModels.PromptBuilder
+  public typealias FoundryPromptRepresentable = FoundationModels.PromptRepresentable
+  public typealias FoundryTranscript = FoundationModels.Transcript
+  public typealias FoundryTool = FoundationModels.Tool
+  public typealias FoundryGuardrails = FoundationModels.LanguageModelSession.Guardrails
+  public typealias FoundryConvertibleFromGeneratedContent = FoundationModels
+    .ConvertibleFromGeneratedContent
+  public typealias FoundryConvertibleToGeneratedContent = FoundationModels
+    .ConvertibleToGeneratedContent
+  public typealias FoundryGenerationID = FoundationModels.GenerationID
 
 #else
-// Provide stub types when Foundation Models is not available
-public protocol Generable {
+  // Provide stub types when Foundation Models is not available
+  public protocol FoundryGenerable {
     associatedtype PartiallyGenerated = Self
     func asPartiallyGenerated() -> PartiallyGenerated
-}
+  }
 
-extension Generable {
+  extension FoundryGenerable {
     public func asPartiallyGenerated() -> Self {
-        return self
+      return self
     }
-}
+  }
 
-public struct Prompt: CustomDebugStringConvertible {
-    public let debugDescription: String = "Prompt"
-}
+  public struct FoundryPrompt: CustomDebugStringConvertible {
+    public let debugDescription: String = "FoundryPrompt"
+  }
 
-public struct Instructions {}
+  public struct FoundryInstructions {}
+  
+  public struct FoundryGeneratedContent {}
+  public struct FoundryGenerationGuide<T> {}
+  public struct FoundryGenerationSchema {}
+  public protocol FoundryInstructionsRepresentable {}
+  public protocol FoundryPromptRepresentable {}
+  public protocol FoundryConvertibleFromGeneratedContent {}
+  public protocol FoundryConvertibleToGeneratedContent {}
+  public struct FoundryGenerationID {}
 
-public struct Transcript {
+  public struct FoundryTranscript {
     public var entries: [Entry] = []
-    
+
     public init() {}
-    
+
     public struct Entry {
-        public enum Role {
-            case user
-            case assistant
-            case system
-        }
-        
-        public enum Content {
-            case text(String)
-        }
-        
-        public let role: Role
-        public let content: [Content]
-        
-        public init(role: Role, content: [Content]) {
-            self.role = role
-            self.content = content
-        }
+      public enum Role {
+        case user
+        case assistant
+        case system
+      }
+
+      public enum Content {
+        case text(String)
+      }
+
+      public let role: Role
+      public let content: [Content]
+
+      public init(role: Role, content: [Content]) {
+        self.role = role
+        self.content = content
+      }
     }
-}
+  }
 
-public protocol Tool {}
+  public protocol FoundryTool {}
 
-public struct Guardrails {
-    public static let `default` = Guardrails()
-}
+  public struct FoundryGuardrails {
+    public static let `default` = FoundryGuardrails()
+  }
 
-// Placeholder builder for when Foundation Models is not available
-@resultBuilder
-public struct PromptBuilder {
-    public static func buildBlock(_ components: String...) -> Prompt {
-        return Prompt()
+  // Placeholder builder for when Foundation Models is not available
+  @resultBuilder
+  public struct FoundryPromptBuilder {
+    public static func buildBlock(_ components: String...) -> FoundryPrompt {
+      return FoundryPrompt()
     }
-}
+  }
 
 #endif
+
+// MARK: - Compatibility Type Aliases
+
+// For backward compatibility and convenience, also expose without Foundry prefix
+public typealias Generable = FoundryGenerable
+public typealias GeneratedContent = FoundryGeneratedContent
+public typealias GenerationGuide = FoundryGenerationGuide
+public typealias GenerationSchema = FoundryGenerationSchema
+public typealias Instructions = FoundryInstructions
+public typealias InstructionsBuilder = FoundryInstructionsBuilder
+public typealias InstructionsRepresentable = FoundryInstructionsRepresentable
+public typealias Prompt = FoundryPrompt
+public typealias PromptBuilder = FoundryPromptBuilder
+public typealias PromptRepresentable = FoundryPromptRepresentable
+public typealias Transcript = FoundryTranscript
+public typealias Tool = FoundryTool
+public typealias Guardrails = FoundryGuardrails
+public typealias ConvertibleFromGeneratedContent = FoundryConvertibleFromGeneratedContent
+public typealias ConvertibleToGeneratedContent = FoundryConvertibleToGeneratedContent
+public typealias GenerationID = FoundryGenerationID

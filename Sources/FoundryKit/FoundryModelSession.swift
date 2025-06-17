@@ -102,7 +102,7 @@ extension FoundryModelSession {
     }
     
     /// A structure that stores the output of a response stream.
-    public struct ResponseStream<Content> where Content: Generable {
+    public struct ResponseStream<Content> where Content: Generable & Sendable {
         private let asyncSequence: any AsyncSequence<Content.PartiallyGenerated, any Error>
         
         internal init<S: AsyncSequence>(_ sequence: S) where S.Element == Content.PartiallyGenerated, S.Failure == any Error {
@@ -163,7 +163,7 @@ extension FoundryModelSession {
         includeSchemaInPrompt: Bool = true,
         options: FoundryGenerationOptions = FoundryGenerationOptions(),
         isolation: isolated (any Actor)? = #isolation
-    ) async throws -> sending Response<Content> where Content: Generable {
+    ) async throws -> sending Response<Content> where Content: Generable & Sendable {
         let result = try await backend.respond(
             to: prompt,
             generating: type,
@@ -182,7 +182,7 @@ extension FoundryModelSession {
         includeSchemaInPrompt: Bool = true,
         options: FoundryGenerationOptions = FoundryGenerationOptions(),
         isolation: isolated (any Actor)? = #isolation
-    ) async throws -> sending Response<Content> where Content: Generable {
+    ) async throws -> sending Response<Content> where Content: Generable & Sendable {
         let result = try await backend.respond(
             to: prompt,
             generating: type,
@@ -201,7 +201,7 @@ extension FoundryModelSession {
         includeSchemaInPrompt: Bool = true,
         isolation: isolated (any Actor)? = #isolation,
         @PromptBuilder prompt: () throws -> Prompt
-    ) async throws -> sending Response<Content> where Content: Generable {
+    ) async throws -> sending Response<Content> where Content: Generable & Sendable {
         let builtPrompt = try prompt()
         return try await respond(
             to: builtPrompt,
@@ -223,7 +223,7 @@ extension FoundryModelSession {
         generating type: Content.Type,
         includeSchemaInPrompt: Bool = true,
         options: FoundryGenerationOptions = FoundryGenerationOptions()
-    ) -> sending ResponseStream<Content> where Content: Generable {
+    ) -> ResponseStream<Content> where Content: Generable & Sendable {
         let stream = backend.streamResponse(
             to: prompt,
             generating: type,
@@ -239,7 +239,7 @@ extension FoundryModelSession {
         generating type: Content.Type,
         includeSchemaInPrompt: Bool = true,
         options: FoundryGenerationOptions = FoundryGenerationOptions()
-    ) -> sending ResponseStream<Content> where Content: Generable {
+    ) -> ResponseStream<Content> where Content: Generable & Sendable {
         let stream = backend.streamResponse(
             to: prompt,
             generating: type,

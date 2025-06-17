@@ -79,7 +79,7 @@ internal final class FoundationBackend: FoundryBackend {
         generating type: Content.Type,
         includeSchemaInPrompt: Bool,
         options: FoundryGenerationOptions
-    ) async throws -> BackendResponse<Content> where Content: Generable {
+    ) async throws -> BackendResponse<Content> where Content: Generable & Sendable {
         do {
             let response = try await session.respond(
                 to: prompt,
@@ -108,7 +108,7 @@ internal final class FoundationBackend: FoundryBackend {
         generating type: Content.Type,
         includeSchemaInPrompt: Bool,
         options: FoundryGenerationOptions
-    ) async throws -> BackendResponse<Content> where Content: Generable {
+    ) async throws -> BackendResponse<Content> where Content: Generable & Sendable {
         do {
             let response = try await session.respond(
                 to: prompt,
@@ -137,7 +137,7 @@ internal final class FoundationBackend: FoundryBackend {
         generating type: Content.Type,
         includeSchemaInPrompt: Bool,
         options: FoundryGenerationOptions
-    ) -> any AsyncSequence<Content.PartiallyGenerated, any Error> where Content: Generable {
+    ) -> any AsyncSequence<Content.PartiallyGenerated, any Error> where Content: Generable & Sendable {
         let stream = session.streamResponse(
             to: prompt,
             generating: type,
@@ -152,7 +152,7 @@ internal final class FoundationBackend: FoundryBackend {
         generating type: Content.Type,
         includeSchemaInPrompt: Bool,
         options: FoundryGenerationOptions
-    ) -> any AsyncSequence<Content.PartiallyGenerated, any Error> where Content: Generable {
+    ) -> any AsyncSequence<Content.PartiallyGenerated, any Error> where Content: Generable & Sendable {
         let stream = session.streamResponse(
             to: prompt,
             generating: type,
@@ -218,7 +218,7 @@ internal final class FoundationBackend: FoundryBackend {
 }
 
 /// Wrapper to adapt Foundation Models stream to our AsyncSequence protocol.
-private struct FoundationStreamWrapper<Content>: AsyncSequence where Content: Generable {
+private struct FoundationStreamWrapper<Content>: AsyncSequence where Content: Generable & Sendable {
     typealias Element = Content.PartiallyGenerated
     
     private let stream: LanguageModelSession.ResponseStream<Content>
