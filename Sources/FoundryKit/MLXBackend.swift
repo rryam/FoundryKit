@@ -92,6 +92,9 @@ internal final class MLXBackend: FoundryBackend, @unchecked Sendable {
             )
         }
         
+        // Track the type for schema access
+        currentGenerationType = type
+        
         // Extract schema from the Generable type
         let schema = try extractSchema(from: type)
         
@@ -202,70 +205,102 @@ internal final class MLXBackend: FoundryBackend, @unchecked Sendable {
     }
     
     private func extractSchema<T: Generable>(from type: T.Type) throws -> [String: Any] {
-        // This is a simplified schema extraction
-        // In a full implementation, you'd use runtime reflection
-        // to extract the actual @Generable schema
-        return [
-            "type": "object",
-            "properties": [:],
-            "required": []
-        ]
+        // Check if the type conforms to StructuredOutput for custom schema
+        if let structuredType = type as? StructuredOutput.Type {
+            return structuredType.jsonSchema
+        }
+        
+        // For standard Generable types, use basic schema extraction
+        return SchemaExtractor.extractSchema(from: type)
     }
     
     private func createStructuredPrompt(prompt: String, schema: [String: Any]) -> String {
-        // Add schema information to the prompt to guide generation
-        let schemaString: String
-        if let schemaData = try? JSONSerialization.data(withJSONObject: schema, options: .prettyPrinted),
-           let schemaStr = String(data: schemaData, encoding: .utf8) {
-            schemaString = schemaStr
-        } else {
-            schemaString = "{}"
+        // Use the structured prompt builder with model-specific optimizations
+        let modelId = model.identifier.lowercased()
+        let config = StructuredGenerationConfig(
+            systemPrompt: StructuredPromptBuilder.structuredSystemPrompt(modelType: modelId)
+        )
+        
+        // Check for example if available
+        var example: String? = nil
+        if let type = currentGenerationType as? StructuredOutput.Type {
+            example = type.exampleJSON
         }
         
-        return """
-        \(prompt)
-        
-        Please respond with valid JSON that matches this schema:
-        \(schemaString)
-        """
+        return StructuredPromptBuilder.buildPrompt(
+            userPrompt: prompt,
+            schema: schema,
+            example: example,
+            config: config
+        )
     }
+    
+    // Track current generation type for schema access
+    private var currentGenerationType: Any.Type?
     
     private func parseStructuredResponse<T: Generable>(
         _ response: String,
         into type: T.Type
     ) throws -> T {
-        // Extract JSON from the response
-        let jsonString = extractJSON(from: response)
-        
-        guard jsonString.data(using: .utf8) != nil else {
+        // Try multiple extraction methods
+        guard let jsonString = JSONExtractor.extractJSON(from: response) ??
+                               JSONExtractor.repairJSON(response) else {
             throw FoundryGenerationError.decodingFailure(
                 FoundryGenerationError.Context(
-                    debugDescription: "Failed to convert response to data"
+                    debugDescription: "Failed to extract valid JSON from response: \(response)"
                 )
             )
         }
         
-        // For now, we'll use a simplified approach
-        // In a full implementation, you'd use the GeneratedContent API
-        _ = JSONDecoder()
-        
-        // This is a placeholder - actual implementation would need
-        // to work with the @Generable macro system
-        throw FoundryGenerationError.decodingFailure(
-            FoundryGenerationError.Context(
-                debugDescription: "Structured generation not yet fully implemented for MLX backend"
+        guard let jsonData = jsonString.data(using: .utf8) else {
+            throw FoundryGenerationError.decodingFailure(
+                FoundryGenerationError.Context(
+                    debugDescription: "Failed to convert JSON string to data"
+                )
             )
-        )
+        }
+        
+        // Try to decode the JSON into the target type
+        do {
+            if let decodableType = type as? Decodable.Type {
+                let decoder = JSONDecoder()
+                let decoded = try decoder.decode(decodableType, from: jsonData)
+                if let result = decoded as? T {
+                    return result
+                }
+            }
+            
+            // If direct decoding fails, try using GeneratedContent conversion
+            if let convertibleType = type as? ConvertibleFromGeneratedContent.Type {
+                // Create a GeneratedContent wrapper
+                let json = try JSONSerialization.jsonObject(with: jsonData)
+                // This would need proper GeneratedContent construction
+                // For now, throw an error indicating partial implementation
+                throw FoundryGenerationError.decodingFailure(
+                    FoundryGenerationError.Context(
+                        debugDescription: "GeneratedContent conversion not yet implemented"
+                    )
+                )
+            }
+            
+            throw FoundryGenerationError.decodingFailure(
+                FoundryGenerationError.Context(
+                    debugDescription: "Type \(type) does not conform to required protocols for parsing"
+                )
+            )
+        } catch let decodingError as DecodingError {
+            throw FoundryGenerationError.decodingFailure(
+                FoundryGenerationError.Context(
+                    debugDescription: "Failed to decode JSON: \(decodingError.localizedDescription)",
+                    underlyingErrors: [decodingError]
+                )
+            )
+        } catch {
+            throw error
+        }
     }
     
-    private func extractJSON(from response: String) -> String {
-        // Simple JSON extraction - look for content between { and }
-        if let start = response.firstIndex(of: "{"),
-           let end = response.lastIndex(of: "}") {
-            return String(response[start...end])
-        }
-        return response
-    }
+    // Removed in favor of JSONExtractor.extractJSON
     
     private func createTranscriptEntry(role: String, content: String) -> Transcript.Entry {
         // Simplified transcript entry creation

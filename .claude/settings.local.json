@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(swift build)"
+      "Bash(swift build)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }
