@@ -1,4 +1,4 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.2
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -6,9 +6,9 @@ import PackageDescription
 let package = Package(
   name: "FoundryKit",
   platforms: [
-    .iOS(.v16),
-    .macOS(.v14),
-    .visionOS(.v1),
+    .iOS(.v26),
+    .macOS(.v26),
+    .visionOS(.v26),
   ],
   products: [
     .library(
