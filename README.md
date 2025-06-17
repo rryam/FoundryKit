@@ -1,4 +1,4 @@
-# FoundryKit
+# FoundryKit (Work in progress)
 
 A unified Swift API for language model inference that seamlessly integrates MLX models and Apple's Foundation Models framework.
 
