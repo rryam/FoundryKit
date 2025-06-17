@@ -87,14 +87,14 @@ struct PropertyInfo {
 }
 
 struct ValidationInfo {
-    let min: Int?
-    let max: Int?
-    let minLength: Int?
-    let maxLength: Int?
-    let minItems: Int?
-    let maxItems: Int?
-    let pattern: String?
-    let enumValues: [String]?
+    var min: Int?
+    var max: Int?
+    var minLength: Int?
+    var maxLength: Int?
+    var minItems: Int?
+    var maxItems: Int?
+    var pattern: String?
+    var enumValues: [String]?
 }
 
 private func extractProperties(from members: MemberBlockItemListSyntax) throws -> [PropertyInfo] {
