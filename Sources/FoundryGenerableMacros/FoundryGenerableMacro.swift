@@ -42,10 +42,11 @@ public struct FoundryGenerableMacro: MemberMacro, ExtensionMacro {
         generatedMembers.append(DeclSyntax(jsonSchemaDecl))
         
         // Generate example JSON if validation rules are present
-        if hasValidationRules(properties) {
-            let exampleDecl = try generateExampleJSON(properties: properties)
-            generatedMembers.append(DeclSyntax(exampleDecl))
-        }
+        // TODO: Fix indentation issues with multi-line string literals
+        // if hasValidationRules(properties) {
+        //     let exampleDecl = try generateExampleJSON(properties: properties)
+        //     generatedMembers.append(DeclSyntax(exampleDecl))
+        // }
         
         return generatedMembers
     }
@@ -350,9 +351,9 @@ private func generateExampleJSON(properties: [PropertyInfo]) throws -> VariableD
     return try VariableDeclSyntax(
         """
         static var exampleJSON: String? {
-            \"\"\"
+            #\"\"\"
             \(raw: exampleString)
-            \"\"\"
+            \"\"\"#
         }
         """
     )

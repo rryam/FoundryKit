@@ -26,7 +26,7 @@ import FoundationModels
 ///     let conditions: String
 /// }
 /// ```
-@attached(member, names: named(generationSchema), named(generatedContent), named(PartiallyGenerated), named(jsonSchema), named(exampleJSON))
+@attached(member, names: named(generationSchema), named(generatedContent), named(PartiallyGenerated), named(jsonSchema))
 @attached(extension, conformances: Generable, names: named(init(_:)))
 public macro FoundryGenerable() = #externalMacro(
     module: "FoundryGenerableMacros",

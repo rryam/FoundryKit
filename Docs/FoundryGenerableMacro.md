@@ -8,7 +8,6 @@ The `@FoundryGenerable` macro is a powerful Swift macro that automatically gener
 
 Traditional structured generation requires:
 - Manual JSON schema creation
-- Boilerplate Generable conformance code
 - Separate validation logic
 - Example data maintenance
 
