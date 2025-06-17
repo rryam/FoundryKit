@@ -41,12 +41,15 @@ public struct FoundryGenerableMacro: MemberMacro, ExtensionMacro {
         let jsonSchemaDecl = try generateJSONSchema(properties: properties)
         generatedMembers.append(DeclSyntax(jsonSchemaDecl))
         
+        // Generate MLX tool call schema
+        let toolSchemaDecl = try generateToolCallSchema(for: structName, properties: properties)
+        generatedMembers.append(DeclSyntax(toolSchemaDecl))
+        
         // Generate example JSON if validation rules are present
-        // TODO: Fix indentation issues with multi-line string literals
-        // if hasValidationRules(properties) {
-        //     let exampleDecl = try generateExampleJSON(properties: properties)
-        //     generatedMembers.append(DeclSyntax(exampleDecl))
-        // }
+        if hasValidationRules(properties) {
+            let exampleDecl = try generateExampleJSON(properties: properties)
+            generatedMembers.append(DeclSyntax(exampleDecl))
+        }
         
         return generatedMembers
     }
@@ -285,7 +288,16 @@ private func generateJSONSchema(properties: [PropertyInfo]) throws -> VariableDe
             propSchema["type"] = "boolean"
         case let type where type.hasPrefix("["):
             propSchema["type"] = "array"
-            propSchema["items"] = ["type": extractArrayElementType(type)]
+            let elementType = extractArrayElementType(type)
+            let itemType: String
+            switch elementType {
+            case "String": itemType = "string"
+            case "Int", "Int32", "Int64": itemType = "integer"
+            case "Double", "Float": itemType = "number"
+            case "Bool": itemType = "boolean"
+            default: itemType = "object"
+            }
+            propSchema["items"] = ["type": itemType]
         default:
             propSchema["type"] = "object"
         }
@@ -330,33 +342,148 @@ private func generateJSONSchema(properties: [PropertyInfo]) throws -> VariableDe
     )
 }
 
+private func generateToolCallSchema(for structName: String, properties: [PropertyInfo]) throws -> VariableDeclSyntax {
+    // Build the parameters schema following MLX tool call format
+    var propertiesDict: [String: Any] = [:]
+    var required: [String] = []
+    
+    for property in properties {
+        var propSchema: [String: Any] = [:]
+        
+        // Determine JSON type
+        switch property.type {
+        case "String":
+            propSchema["type"] = "string"
+        case "Int", "Int32", "Int64":
+            propSchema["type"] = "integer"
+        case "Double", "Float":
+            propSchema["type"] = "number"
+        case "Bool":
+            propSchema["type"] = "boolean"
+        case let type where type.hasPrefix("["):
+            propSchema["type"] = "array"
+            let elementType = extractArrayElementType(type)
+            let itemType: String
+            switch elementType {
+            case "String": itemType = "string"
+            case "Int", "Int32", "Int64": itemType = "integer"
+            case "Double", "Float": itemType = "number"
+            case "Bool": itemType = "boolean"
+            default: itemType = "object"
+            }
+            propSchema["items"] = ["type": itemType]
+        default:
+            propSchema["type"] = "object"
+        }
+        
+        // Add description
+        if let desc = property.description {
+            propSchema["description"] = desc
+        }
+        
+        // Add validation rules
+        if let validation = property.validation {
+            if let min = validation.min { propSchema["minimum"] = min }
+            if let max = validation.max { propSchema["maximum"] = max }
+            if let minLength = validation.minLength { propSchema["minLength"] = minLength }
+            if let maxLength = validation.maxLength { propSchema["maxLength"] = maxLength }
+            if let minItems = validation.minItems { propSchema["minItems"] = minItems }
+            if let maxItems = validation.maxItems { propSchema["maxItems"] = maxItems }
+            if let pattern = validation.pattern { propSchema["pattern"] = pattern }
+            if let enumValues = validation.enumValues { propSchema["enum"] = enumValues }
+        }
+        
+        propertiesDict[property.name] = propSchema
+        
+        if !property.isOptional {
+            required.append(property.name)
+        }
+    }
+    
+    // Build the complete tool schema
+    let toolSchema: [String: Any] = [
+        "type": "function",
+        "function": [
+            "name": "generate_\(structName.camelCaseToSnakeCase())",
+            "description": "Generate a structured \(structName) object",
+            "parameters": [
+                "type": "object",
+                "properties": propertiesDict,
+                "required": required
+            ]
+        ]
+    ]
+    
+    let schemaJSON = try serializeJSON(toolSchema)
+    
+    return try VariableDeclSyntax(
+        """
+        static var toolCallSchema: [String: Any] {
+            \(raw: schemaJSON)
+        }
+        """
+    )
+}
+
 private func generateExampleJSON(properties: [PropertyInfo]) throws -> VariableDeclSyntax {
-    var exampleDict: [String: Any] = [:]
+    // Build Swift code that generates the example dictionary
+    var propertyAssignments: [String] = []
     
     for property in properties {
         if property.isOptional && Bool.random() {
             continue // Randomly skip optional properties
         }
         
-        exampleDict[property.name] = generateExampleValue(
+        let exampleValue = generateExampleValue(
             for: property.type,
             validation: property.validation,
             description: property.description
         )
+        
+        let swiftValue = convertToSwiftLiteral(exampleValue)
+        propertyAssignments.append("\"\(property.name)\": \(swiftValue)")
     }
     
-    let exampleJSON = try JSONSerialization.data(withJSONObject: exampleDict, options: .prettyPrinted)
-    let exampleString = String(data: exampleJSON, encoding: .utf8) ?? "{}"
+    let dictionaryContent = propertyAssignments.joined(separator: ",\n                ")
     
     return try VariableDeclSyntax(
         """
         static var exampleJSON: String? {
-            #\"\"\"
-            \(raw: exampleString)
-            \"\"\"#
+            let example: [String: Any] = [
+                \(raw: dictionaryContent)
+            ]
+            
+            guard let data = try? JSONSerialization.data(withJSONObject: example, options: .prettyPrinted),
+                  let json = String(data: data, encoding: .utf8) else {
+                return nil
+            }
+            return json
         }
         """
     )
+}
+
+private func convertToSwiftLiteral(_ value: Any) -> String {
+    switch value {
+    case let str as String:
+        return "\"\(str)\""
+    case let num as Int:
+        return String(num)
+    case let num as Double:
+        return String(num)
+    case let bool as Bool:
+        return String(bool)
+    case let array as [Any]:
+        let elements = array.map { convertToSwiftLiteral($0) }.joined(separator: ", ")
+        return "[\(elements)]"
+    case let dict as [String: Any]:
+        let pairs = dict.map { key, value in
+            "\"\(key)\": \(convertToSwiftLiteral(value))"
+        }.joined(separator: ", ")
+        return "[\(pairs)]"
+    default:
+        return "nil"
+    }
 }
 
 // MARK: - Helper Functions
@@ -400,14 +527,9 @@ private func extractArrayElementType(_ arrayType: String) -> String {
     // Extract element type from [Type] format
     let cleaned = arrayType.replacingOccurrences(of: "[", with: "")
         .replacingOccurrences(of: "]", with: "")
+        .trimmingCharacters(in: .whitespaces)
     
-    switch cleaned {
-    case "String": return "string"
-    case "Int", "Int32", "Int64": return "integer"
-    case "Double", "Float": return "number"
-    case "Bool": return "boolean"
-    default: return "object"
-    }
+    return cleaned
 }
 
 private func generateExampleValue(for type: String, validation: ValidationInfo?, description: String?) -> Any {
@@ -451,9 +573,24 @@ private func generateExampleValue(for type: String, validation: ValidationInfo?,
     case let arrayType where arrayType.hasPrefix("["):
         let elementType = extractArrayElementType(arrayType)
         let count = validation?.minItems ?? 2
-        return (0..<count).map { _ in
-            generateExampleValue(for: elementType, validation: nil, description: nil)
-        }
+        return (0..<count).map { index in
+            // Generate appropriate values for common array element types
+            switch elementType {
+            case "String":
+                if let desc = description?.lowercased(), desc.contains("email") {
+                    return "user\(index + 1)@example.com"
+                }
+                return "item\(index + 1)"
+            case "Int", "Int32", "Int64":
+                return index + 1
+            case "Double", "Float":
+                return Double(index + 1) * 1.5
+            case "Bool":
+                return index % 2 == 0
+            default:
+                return generateExampleValue(for: elementType, validation: nil, description: nil)
+            }
+        } as [Any]
         
     default:
         return ["nested": "object"]
@@ -473,6 +610,15 @@ private func serializeJSON(_ object: Any) throws -> String {
         .replacingOccurrences(of: " : ", with: ": ")
     
     return jsonString
+}
+
+extension String {
+    func camelCaseToSnakeCase() -> String {
+        let pattern = "([a-z0-9])([A-Z])"
+        let regex = try! NSRegularExpression(pattern: pattern, options: [])
+        let range = NSRange(location: 0, length: self.utf16.count)
+        return regex.stringByReplacingMatches(in: self, options: [], range: range, withTemplate: "$1_$2").lowercased()
+    }
 }
 
 // MARK: - Error Types

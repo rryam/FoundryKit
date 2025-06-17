@@ -22,8 +22,8 @@ final class FoundryGenerableMacroTests: XCTestCase {
         XCTAssertNotNil(TestModel.generationSchema)
         XCTAssertNotNil(TestModel.jsonSchema)
         
-        // TODO: Example JSON generation is temporarily disabled due to indentation issues
-        // XCTAssertNotNil(TestModel.exampleJSON)
+        // Test that example JSON is generated when validation rules are present
+        XCTAssertNotNil(TestModel.exampleJSON)
     }
     
     func testJSONSchemaStructure() {

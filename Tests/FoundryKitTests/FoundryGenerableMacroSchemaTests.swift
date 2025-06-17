@@ -31,6 +31,17 @@ final class FoundryGenerableMacroSchemaTests: XCTestCase {
         print("\n=== Generated JSON Schema ===")
         print(prettyPrintJSON(schema))
         
+        // Print the generated example JSON
+        if let exampleJSON = DetailedTestModel.exampleJSON {
+            print("\n=== Generated Example JSON ===")
+            print(exampleJSON)
+        }
+        
+        // Print the MLX tool call schema
+        let toolSchema = DetailedTestModel.toolCallSchema
+        print("\n=== Generated MLX Tool Call Schema ===")
+        print(prettyPrintJSON(toolSchema))
+        
         // Verify the schema structure
         XCTAssertEqual(schema["type"] as? String, "object")
         
