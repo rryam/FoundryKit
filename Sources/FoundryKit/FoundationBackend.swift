@@ -1,4 +1,3 @@
-#if canImport(FoundationModels)
 import Foundation
 import FoundationModels
 
@@ -243,5 +242,3 @@ private struct FoundationStreamWrapper<Content>: AsyncSequence where Content: Ge
         }
     }
 }
-
-#endif

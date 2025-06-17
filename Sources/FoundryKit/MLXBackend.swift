@@ -1,9 +1,7 @@
 import Foundation
 import MLXLLM
 import MLXLMCommon
-#if canImport(FoundationModels)
 import FoundationModels
-#endif
 
 /// Backend implementation that uses MLX for language model inference.
 internal final class MLXBackend: FoundryBackend, @unchecked Sendable {

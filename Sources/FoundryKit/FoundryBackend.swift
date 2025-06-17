@@ -1,7 +1,5 @@
 import Foundation
-#if canImport(FoundationModels)
 import FoundationModels
-#endif
 
 /// Internal protocol for backend implementations.
 internal protocol FoundryBackend: Sendable {

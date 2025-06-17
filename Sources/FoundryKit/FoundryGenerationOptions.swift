@@ -1,7 +1,5 @@
 import Foundation
-#if canImport(FoundationModels)
 import FoundationModels
-#endif
 
 /// Options that control how the model generates its response to a prompt.
 public struct FoundryGenerationOptions: Sendable, Equatable {
@@ -91,7 +89,6 @@ public struct FoundryGenerationOptions: Sendable, Equatable {
     }
 }
 
-#if canImport(FoundationModels)
 extension FoundryGenerationOptions {
     /// Converts to Foundation Models GenerationOptions.
     internal func toFoundationModels() -> GenerationOptions {
@@ -121,4 +118,3 @@ extension FoundryGenerationOptions {
         return options
     }
 }
-#endif

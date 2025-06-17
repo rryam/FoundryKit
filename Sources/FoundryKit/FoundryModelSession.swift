@@ -1,8 +1,6 @@
 import Foundation
 import Observation
-#if canImport(FoundationModels)
 import FoundationModels
-#endif
 
 /// A session for generating responses using language models.
 ///
@@ -46,15 +44,11 @@ public final class FoundryModelSession {
         // Select appropriate backend based on model type
         switch model {
         case .foundation:
-            #if canImport(FoundationModels)
             self.backend = FoundationBackend(
                 guardrails: guardrails,
                 tools: tools,
                 instructions: instructions
             )
-            #else
-            fatalError("Foundation Models not available on this platform")
-            #endif
         case .mlx:
             self.backend = MLXBackend(
                 model: model,
