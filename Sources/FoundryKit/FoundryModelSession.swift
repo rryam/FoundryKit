@@ -55,7 +55,7 @@ public final class FoundryModelSession {
             #else
             fatalError("Foundation Models not available on this platform")
             #endif
-        case .mlx, .custom:
+        case .mlx:
             self.backend = MLXBackend(
                 model: model,
                 guardrails: guardrails,

@@ -177,13 +177,14 @@ internal final class MLXBackend: FoundryBackend, @unchecked Sendable {
         
         do {
             switch model {
-            case .mlx(let modelId):
-                let loadedModel = try await loadModel(id: modelId)
-                self.mlxModel = loadedModel
-                self.chatSession = ChatSession(loadedModel)
-            case .custom(let modelId):
-                // For custom models, attempt to load as MLX
-                let loadedModel = try await loadModel(id: modelId)
+            case .mlx(let source):
+                let loadedModel: ModelContext
+                switch source {
+                case .id(let modelId):
+                    loadedModel = try await loadModel(id: modelId)
+                case .registry(let config):
+                    loadedModel = try await loadModel(configuration: config)
+                }
                 self.mlxModel = loadedModel
                 self.chatSession = ChatSession(loadedModel)
             case .foundation:

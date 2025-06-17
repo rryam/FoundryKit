@@ -1,35 +1,60 @@
 import Foundation
+import MLXLMCommon
 #if canImport(FoundationModels)
 import FoundationModels
 #endif
 
 /// Represents different types of language models available in FoundryKit.
 public enum FoundryModel: Sendable, Equatable {
-    /// An MLX model identified by its Hugging Face model ID.
+    /// Represents an MLX model source.
+    public enum MLXSource: Sendable, Equatable {
+        /// Model identified by its Hugging Face ID string.
+        case id(String)
+        /// Model from the MLXLMRegistry.
+        case registry(ModelConfiguration)
+        
+        public static func == (lhs: MLXSource, rhs: MLXSource) -> Bool {
+            switch (lhs, rhs) {
+            case let (.id(lhsId), .id(rhsId)):
+                return lhsId == rhsId
+            case let (.registry(lhsConfig), .registry(rhsConfig)):
+                return lhsConfig.id == rhsConfig.id
+            default:
+                return false
+            }
+        }
+    }
+    
+    /// An MLX model that can be specified by ID or registry configuration.
     /// 
     /// Examples:
-    /// - `"mlx-community/Qwen3-4B-4bit"`
-    /// - `"mistralai/Mistral-7B-v0.1"`
-    /// - `"microsoft/Phi-3.5-mini-instruct"`
-    case mlx(String)
+    /// - `.mlx("mlx-community/Qwen3-4B-4bit")`
+    /// - `.mlx(.llama3_2_1B_4bit)`
+    case mlx(MLXSource)
     
     /// Apple's Foundation Models (Apple Intelligence).
     /// Uses the system's default on-device language model.
     case foundation
     
-    /// A custom model with a specific identifier.
-    /// Reserved for future use with custom model implementations.
-    case custom(String)
+    // MARK: - Convenience Initializers
+    
+    /// Creates an MLX model from a string ID.
+    public static func mlx(_ id: String) -> FoundryModel {
+        .mlx(.id(id))
+    }
+    
+    /// Creates an MLX model from a registry configuration.
+    public static func mlx(_ config: ModelConfiguration) -> FoundryModel {
+        .mlx(.registry(config))
+    }
     
     /// Returns a Boolean value indicating whether two values are equal.
     public static func == (lhs: FoundryModel, rhs: FoundryModel) -> Bool {
         switch (lhs, rhs) {
-        case let (.mlx(lhsId), .mlx(rhsId)):
-            return lhsId == rhsId
+        case let (.mlx(lhsSource), .mlx(rhsSource)):
+            return lhsSource == rhsSource
         case (.foundation, .foundation):
             return true
-        case let (.custom(lhsId), .custom(rhsId)):
-            return lhsId == rhsId
         default:
             return false
         }
@@ -40,7 +65,7 @@ extension FoundryModel {
     /// Returns true if this model uses MLX backend.
     var isMLX: Bool {
         switch self {
-        case .mlx, .custom:
+        case .mlx:
             return true
         case .foundation:
             return false
@@ -52,7 +77,7 @@ extension FoundryModel {
         switch self {
         case .foundation:
             return true
-        case .mlx, .custom:
+        case .mlx:
             return false
         }
     }
@@ -60,12 +85,15 @@ extension FoundryModel {
     /// Returns the model identifier string.
     var identifier: String {
         switch self {
-        case .mlx(let id):
-            return id
+        case .mlx(let source):
+            switch source {
+            case .id(let id):
+                return id
+            case .registry(let config):
+                return String(describing: config.id)
+            }
         case .foundation:
             return "foundation.default"
-        case .custom(let id):
-            return id
         }
     }
 }
