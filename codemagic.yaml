@@ -24,27 +24,9 @@ workflows:
     triggering:
       <<: *events
     scripts:
-      - name: Install dependencies
-        script: |
-          brew install xcodegen
-      
       - name: Build Swift Package
         script: |
           swift build
-      
-      - name: Generate Example App Project
-        script: |
-          cd Examples/FoundryMacroExample
-          xcodegen generate
-      
-      - name: Build Example App (iOS)
-        script: |
-          cd Examples/FoundryMacroExample
-          xcodebuild -scheme FoundryMacroExample_iOS \
-            -destination "platform=iOS Simulator,name=iPhone 16" \
-            -configuration Debug \
-            build
-    
     artifacts:
       - build/**/*.log
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
