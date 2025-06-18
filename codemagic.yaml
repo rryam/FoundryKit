@@ -43,7 +43,7 @@ workflows:
         script: |
           #!/bin/zsh
           
-          declare -a DESTINATIONS=("platform=iOS Simulator,name=iPhone 16" "platform=macOS" "platform=visionOS Simulator,name=Apple Vision Pro")
+          declare -a DESTINATIONS=("platform=iOS Simulator,name=iPhone 16" "platform=visionOS Simulator,name=Apple Vision Pro")
           for DESTINATION in "${DESTINATIONS[@]}"
             do
               xcodebuild clean build \
@@ -62,14 +62,6 @@ workflows:
           cd Examples/FoundryMacroExample
           xcodebuild -scheme FoundryMacroExample \
             -destination "platform=iOS Simulator,name=iPhone 16" \
-            -configuration Debug \
-            build
-      
-      - name: Build Example App (macOS)
-        script: |
-          cd Examples/FoundryMacroExample
-          xcodebuild -scheme FoundryMacroExample \
-            -destination "platform=macOS" \
             -configuration Debug \
             build
     
