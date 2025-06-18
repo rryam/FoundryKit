@@ -99,31 +99,55 @@ internal final class MLXBackend: FoundryBackend, @unchecked Sendable {
         let schema = try extractSchema(from: type)
         
         // Create structured prompt
-        let structuredPrompt = includeSchemaInPrompt ? 
+        var structuredPrompt = includeSchemaInPrompt ? 
             createStructuredPrompt(prompt: prompt, schema: schema) : prompt
         
-        do {
-            let response = try await chatSession.respond(to: structuredPrompt)
-            
-            // Parse JSON response into the target type
-            let parsedContent = try parseStructuredResponse(response, into: type)
-            
-            // Create transcript entries - simplified for now
-            let promptEntry = createTranscriptEntry(role: "user", content: structuredPrompt)
-            let responseEntry = createTranscriptEntry(role: "assistant", content: response)
-            
-            return BackendResponse(
-                content: parsedContent,
-                transcriptEntries: [promptEntry, responseEntry][...]
-            )
-        } catch {
-            throw FoundryGenerationError.decodingFailure(
-                FoundryGenerationError.Context(
-                    debugDescription: "Failed to parse MLX response into \(type): \(error)",
-                    underlyingErrors: [error]
+        // Get retry configuration
+        let maxRetries = 3 // Could be made configurable
+        var lastError: Error?
+        
+        // Try up to maxRetries times
+        for attempt in 1...maxRetries {
+            do {
+                let response = try await chatSession.respond(to: structuredPrompt)
+                
+                // Try to parse JSON response into the target type
+                let parsedContent = try parseStructuredResponse(response, into: type)
+                
+                // Success! Create transcript entries
+                let promptEntry = createTranscriptEntry(role: "user", content: structuredPrompt)
+                let responseEntry = createTranscriptEntry(role: "assistant", content: response)
+                
+                return BackendResponse(
+                    content: parsedContent,
+                    transcriptEntries: [promptEntry, responseEntry][...]
                 )
-            )
+            } catch {
+                lastError = error
+                
+                // If this isn't the last attempt, add retry context to prompt
+                if attempt < maxRetries {
+                    // Log the attempt for debugging
+                    print("FoundryKit: Structured generation attempt \(attempt) failed, retrying...")
+                    
+                    // Optionally modify the prompt to emphasize JSON format
+                    if attempt == 2 {
+                        structuredPrompt = structuredPrompt.replacingOccurrences(
+                            of: "IMPORTANT: Respond ONLY with valid JSON",
+                            with: "CRITICAL: You MUST respond with ONLY valid JSON, no markdown, no explanation"
+                        )
+                    }
+                }
+            }
         }
+        
+        // All retries failed
+        throw FoundryGenerationError.decodingFailure(
+            FoundryGenerationError.Context(
+                debugDescription: "Failed to parse MLX response into \(type) after \(maxRetries) attempts: \(lastError?.localizedDescription ?? "Unknown error")",
+                underlyingErrors: lastError.map { [$0] } ?? []
+            )
+        )
     }
     
     func respond<Content>(
@@ -218,7 +242,8 @@ internal final class MLXBackend: FoundryBackend, @unchecked Sendable {
         // Use the structured prompt builder with model-specific optimizations
         let modelId = model.identifier.lowercased()
         let config = StructuredGenerationConfig(
-            systemPrompt: StructuredPromptBuilder.structuredSystemPrompt(modelType: modelId)
+            systemPrompt: StructuredPromptBuilder.structuredSystemPrompt(modelType: modelId),
+            modelType: modelId
         )
         
         // Check for example if available

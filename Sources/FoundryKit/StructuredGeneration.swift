@@ -37,18 +37,23 @@ public struct StructuredGenerationConfig: Sendable {
     /// Temperature override for structured generation (lower is more deterministic)
     public let temperature: Double?
     
+    /// Model type identifier for model-specific prompting
+    public let modelType: String?
+    
     public init(
         includeSchemaInPrompt: Bool = true,
         includeExample: Bool = true,
         maxRetries: Int = 3,
         systemPrompt: String? = nil,
-        temperature: Double? = 0.7
+        temperature: Double? = 0.7,
+        modelType: String? = nil
     ) {
         self.includeSchemaInPrompt = includeSchemaInPrompt
         self.includeExample = includeExample
         self.maxRetries = maxRetries
         self.systemPrompt = systemPrompt
         self.temperature = temperature
+        self.modelType = modelType
     }
     
     public static let `default` = StructuredGenerationConfig()
@@ -242,19 +247,149 @@ public enum StructuredPromptBuilder {
         example: String? = nil,
         config: StructuredGenerationConfig = .default
     ) -> String {
+        let schemaJSON: String
+        if let schemaData = try? JSONSerialization.data(
+            withJSONObject: schema,
+            options: .prettyPrinted
+        ), let str = String(data: schemaData, encoding: .utf8) {
+            schemaJSON = str
+        } else {
+            schemaJSON = "{}"
+        }
+        
+        // Use model-specific prompt format
+        return buildModelSpecificPrompt(
+            userPrompt: userPrompt,
+            schemaJSON: schemaJSON,
+            example: example,
+            modelType: config.modelType ?? "default",
+            config: config
+        )
+    }
+    
+    /// Creates model-specific prompts for better structured generation
+    private static func buildModelSpecificPrompt(
+        userPrompt: String,
+        schemaJSON: String,
+        example: String?,
+        modelType: String,
+        config: StructuredGenerationConfig
+    ) -> String {
+        let modelIdentifier = modelType.lowercased()
+        
+        switch modelIdentifier {
+        case let id where id.contains("llama") || id.contains("meta-llama"):
+            return buildLlamaStylePrompt(userPrompt: userPrompt, schemaJSON: schemaJSON, example: example, config: config)
+            
+        case let id where id.contains("qwen"):
+            return buildQwenStylePrompt(userPrompt: userPrompt, schemaJSON: schemaJSON, example: example, config: config)
+            
+        case let id where id.contains("mistral"):
+            return buildMistralStylePrompt(userPrompt: userPrompt, schemaJSON: schemaJSON, example: example, config: config)
+            
+        case let id where id.contains("phi"):
+            return buildPhiStylePrompt(userPrompt: userPrompt, schemaJSON: schemaJSON, example: example, config: config)
+            
+        default:
+            return buildDefaultPrompt(userPrompt: userPrompt, schemaJSON: schemaJSON, example: example, config: config)
+        }
+    }
+    
+    // MARK: - Model-Specific Prompt Builders
+    
+    private static func buildLlamaStylePrompt(
+        userPrompt: String,
+        schemaJSON: String,
+        example: String?,
+        config: StructuredGenerationConfig
+    ) -> String {
         var prompt = userPrompt
         
         if config.includeSchemaInPrompt {
-            let schemaJSON: String
-            if let schemaData = try? JSONSerialization.data(
-                withJSONObject: schema,
-                options: .prettyPrinted
-            ), let str = String(data: schemaData, encoding: .utf8) {
-                schemaJSON = str
-            } else {
-                schemaJSON = "{}"
-            }
-            
+            prompt += "\n\nYou must respond with a JSON object that conforms to the following schema:\n```json\n\(schemaJSON)\n```"
+        }
+        
+        if config.includeExample, let example = example {
+            prompt += "\n\nExample output format:\n```json\n\(example)\n```"
+        }
+        
+        prompt += "\n\nProvide only the JSON object with no additional text or markdown formatting."
+        
+        return prompt
+    }
+    
+    private static func buildQwenStylePrompt(
+        userPrompt: String,
+        schemaJSON: String,
+        example: String?,
+        config: StructuredGenerationConfig
+    ) -> String {
+        var prompt = userPrompt
+        
+        if config.includeSchemaInPrompt {
+            prompt += "\n\n请按照以下JSON模式响应 (Respond according to this JSON schema):\n```json\n\(schemaJSON)\n```"
+        }
+        
+        if config.includeExample, let example = example {
+            prompt += "\n\n示例 (Example):\n```json\n\(example)\n```"
+        }
+        
+        prompt += "\n\n仅返回JSON对象，不要包含其他文本。(Return only the JSON object, no other text.)"
+        
+        return prompt
+    }
+    
+    private static func buildMistralStylePrompt(
+        userPrompt: String,
+        schemaJSON: String,
+        example: String?,
+        config: StructuredGenerationConfig
+    ) -> String {
+        var prompt = "[INST] " + userPrompt
+        
+        if config.includeSchemaInPrompt {
+            prompt += "\n\nGenerate a JSON response following this exact schema:\n```json\n\(schemaJSON)\n```"
+        }
+        
+        if config.includeExample, let example = example {
+            prompt += "\n\nHere is an example of the expected format:\n```json\n\(example)\n```"
+        }
+        
+        prompt += "\n\nOutput only valid JSON. [/INST]"
+        
+        return prompt
+    }
+    
+    private static func buildPhiStylePrompt(
+        userPrompt: String,
+        schemaJSON: String,
+        example: String?,
+        config: StructuredGenerationConfig
+    ) -> String {
+        var prompt = "Instruction: " + userPrompt
+        
+        if config.includeSchemaInPrompt {
+            prompt += "\n\nOutput format (JSON schema):\n\(schemaJSON)"
+        }
+        
+        if config.includeExample, let example = example {
+            prompt += "\n\nExample:\n\(example)"
+        }
+        
+        prompt += "\n\nOutput:"
+        
+        return prompt
+    }
+    
+    private static func buildDefaultPrompt(
+        userPrompt: String,
+        schemaJSON: String,
+        example: String?,
+        config: StructuredGenerationConfig
+    ) -> String {
+        var prompt = userPrompt
+        
+        if config.includeSchemaInPrompt {
             prompt += "\n\nPlease respond with valid JSON that matches this schema:\n```json\n\(schemaJSON)\n```"
         }
         

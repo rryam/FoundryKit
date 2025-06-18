@@ -278,27 +278,6 @@ public indirect enum SchemaType {
     case null
 }
 
-/// Extension to integrate guided generation with MLX
-extension MLXBackend {
-    /// Generate a structured response with guided generation
-    func generateGuided<T: Generable & Sendable>(
-        prompt: String,
-        generating type: T.Type,
-        options: FoundryGenerationOptions? = nil
-    ) async throws -> T {
-        // For now, use the existing structured generation approach
-        // Full guided generation would require deeper MLX integration
-        
-        // Create generation schema from the Generable type
-        _ = GuidedGenerationSchema(from: type)
-        
-        // For now, we'll use the existing structured generation approach
-        // Full guided generation would require deeper MLX integration
-        return try await respond(
-            to: prompt,
-            generating: type,
-            includeSchemaInPrompt: true,
-            options: options ?? FoundryGenerationOptions()
-        ).content
-    }
-}
+// MARK: - Future MLX Integration
+// When MLX supports logit processors, the GuidedJSONProcessor above can be integrated
+// to provide true constrained generation at the token level.
