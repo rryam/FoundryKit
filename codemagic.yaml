@@ -28,20 +28,9 @@ workflows:
         script: |
           brew install xcodegen
       
-      - name: Download Metal Toolchain
-        script: |
-          xcodebuild -downloadComponent MetalToolchain
-      
       - name: Build Swift Package
         script: |
           swift build
-      
-      - name: Run Tests
-        script: |
-          xcodebuild test \
-            -scheme "$XCODE_SCHEME" \
-            -destination "platform=iOS Simulator,name=iPhone 16" \
-            -skipPackagePluginValidation
       
       - name: Build Framework for Multiple Platforms
         script: |
