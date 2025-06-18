@@ -32,19 +32,6 @@ workflows:
         script: |
           swift build
       
-      - name: Build Framework for Multiple Platforms
-        script: |
-          #!/bin/zsh
-          
-          declare -a DESTINATIONS=("platform=iOS Simulator,name=iPhone 16" "platform=visionOS Simulator,name=Apple Vision Pro")
-          for DESTINATION in "${DESTINATIONS[@]}"
-            do
-              xcodebuild clean build \
-                -scheme "$XCODE_SCHEME" \
-                -destination "$DESTINATION" \
-                -skipPackagePluginValidation
-          done
-      
       - name: Generate Example App Project
         script: |
           cd Examples/FoundryMacroExample
