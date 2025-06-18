@@ -10,12 +10,143 @@ public typealias GuidedGenerationSchema = RuntimeGenerationSchema
 
 // MARK: - MLX LogitProcessor Integration
 
+/// State container for thread-safe access
+private actor ProcessorState {
+    var parseState: JSONParseState
+    var validTokenCache: [String: Set<Int>] = [:]
+    
+    init(schema: GuidedGenerationSchema) {
+        self.parseState = JSONParseState(schema: schema)
+    }
+    
+    func reset(schema: GuidedGenerationSchema) {
+        self.parseState = JSONParseState(schema: schema)
+        self.validTokenCache.removeAll()
+    }
+    
+    func updateWithToken(_ tokenId: Int, tokenizer: Tokenizer) {
+        validTokenCache.removeAll()
+        let text = tokenizer.decode(tokens: [tokenId])
+        parseState.advance(with: text)
+    }
+    
+    func getValidTokenIds(tokenizer: Tokenizer) -> Set<Int> {
+        let stateKey = parseState.currentStateKey
+        
+        if let cached = validTokenCache[stateKey] {
+            return cached
+        }
+        
+        let validChars = parseState.getValidNextCharacters()
+        var validTokenIds = Set<Int>()
+        
+        for char in validChars {
+            let charString = String(char)
+            let tokens = tokenizer.encode(text: charString)
+            validTokenIds.formUnion(tokens)
+        }
+        
+        if parseState.isComplete {
+            if let eosId = tokenizer.eosTokenId {
+                validTokenIds.insert(eosId)
+            }
+        }
+        
+        validTokenCache[stateKey] = validTokenIds
+        return validTokenIds
+    }
+    
+    var isComplete: Bool {
+        return parseState.isComplete
+    }
+}
+
 /// A constraint processor for guided JSON generation
 /// Now conforms to MLX's LogitProcessor protocol for token-level constraints!
 public final class GuidedJSONProcessor: LogitProcessor, @unchecked Sendable {
     private let schema: GuidedGenerationSchema
     private let tokenizer: Tokenizer
-    private let lock = NSLock()
+    private let state: ProcessorState
+    
+    // We need to maintain a reference to track state synchronously
+    // This is a limitation of the LogitProcessor protocol which is synchronous
+    private var cachedValidTokens: Set<Int> = []
+    private var cachedIsComplete: Bool = false
+    
+    public init(schema: GuidedGenerationSchema, tokenizer: Tokenizer) {
+        self.schema = schema
+        self.tokenizer = tokenizer
+        self.state = ProcessorState(schema: schema)
+        
+        // Initialize cached values
+        Task {
+            self.cachedValidTokens = await state.getValidTokenIds(tokenizer: tokenizer)
+            self.cachedIsComplete = await state.isComplete
+        }
+    }
+    
+    // MARK: - LogitProcessor Protocol
+    
+    public func prompt(_ prompt: MLXArray) {
+        // Reset state when a new prompt starts
+        Task {
+            await state.reset(schema: schema)
+            self.cachedValidTokens = await state.getValidTokenIds(tokenizer: tokenizer)
+            self.cachedIsComplete = await state.isComplete
+        }
+    }
+    
+    public func didSample(token: MLXArray) {
+        // Update parse state with the sampled token
+        let tokenId = token.item(Int.self)
+        Task {
+            await state.updateWithToken(tokenId, tokenizer: tokenizer)
+            self.cachedValidTokens = await state.getValidTokenIds(tokenizer: tokenizer)
+            self.cachedIsComplete = await state.isComplete
+        }
+    }
+    
+    public func process(logits: MLXArray) -> MLXArray {
+        // Use cached values for synchronous processing
+        let validTokenIds = cachedValidTokens
+        
+        // If we're complete or have no constraints, return original logits
+        if cachedIsComplete || validTokenIds.isEmpty {
+            return logits
+        }
+        
+        // Get vocabulary size from logits shape
+        let vocabSize = logits.shape.last ?? 0
+        
+        // Create mask: 1 for valid tokens, 0 for invalid
+        var maskValues = [Float](repeating: 0, count: vocabSize)
+        for tokenId in validTokenIds {
+            if tokenId < vocabSize {
+                maskValues[tokenId] = 1
+            }
+        }
+        
+        let mask = MLXArray(maskValues).reshaped(1, vocabSize)
+        
+        // Apply mask: set invalid tokens to -inf
+        // Use broadcasting to apply mask
+        let maskedLogits = MLX.where(
+            mask .== 0,
+            MLXArray(-Float.infinity),
+            logits
+        )
+        
+        return maskedLogits
+    }
+}
+
+// MARK: - Alternative: Fully Synchronous Processor
+
+/// Alternative implementation that avoids actors entirely
+/// This is more suitable for the synchronous LogitProcessor protocol
+public final class SyncGuidedJSONProcessor: LogitProcessor, @unchecked Sendable {
+    private let schema: GuidedGenerationSchema
+    private let tokenizer: Tokenizer
     private var parseState: JSONParseState
     private var validTokenCache: [String: Set<Int>] = [:]
     
@@ -28,25 +159,18 @@ public final class GuidedJSONProcessor: LogitProcessor, @unchecked Sendable {
     // MARK: - LogitProcessor Protocol
     
     public func prompt(_ prompt: MLXArray) {
-        lock.lock()
-        defer { lock.unlock() }
         // Reset state when a new prompt starts
         self.parseState = JSONParseState(schema: schema)
         self.validTokenCache.removeAll()
     }
     
     public func didSample(token: MLXArray) {
-        lock.lock()
-        defer { lock.unlock() }
         // Update parse state with the sampled token
         let tokenId = token.item(Int.self)
         updateStateWithToken(tokenId)
     }
     
     public func process(logits: MLXArray) -> MLXArray {
-        lock.lock()
-        defer { lock.unlock() }
-        
         let validTokenIds = getValidTokenIds()
         
         // If we're complete or have no constraints, return original logits
@@ -68,7 +192,6 @@ public final class GuidedJSONProcessor: LogitProcessor, @unchecked Sendable {
         let mask = MLXArray(maskValues).reshaped(1, vocabSize)
         
         // Apply mask: set invalid tokens to -inf
-        // Use broadcasting to apply mask
         let maskedLogits = MLX.where(
             mask .== 0,
             MLXArray(-Float.infinity),
@@ -99,10 +222,6 @@ public final class GuidedJSONProcessor: LogitProcessor, @unchecked Sendable {
             // Get all tokens that could produce this character
             let tokens = tokenizer.encode(text: charString)
             validTokenIds.formUnion(tokens)
-            
-            // Note: Checking all tokens is computationally expensive
-            // In a real implementation, we'd need a more efficient approach
-            // For now, we'll skip the prefix check
         }
         
         // Always allow EOS token if JSON is complete
@@ -401,8 +520,8 @@ extension MLXBackend {
     ) -> GuidedGenerationSession? {
         guard let mlxModel = getMLXModel() else { return nil }
         
-        // Create the guided processor
-        let processor = GuidedJSONProcessor(
+        // Create the guided processor (using sync version for simplicity)
+        let processor = SyncGuidedJSONProcessor(
             schema: schema,
             tokenizer: mlxModel.tokenizer
         )
@@ -416,13 +535,12 @@ extension MLXBackend {
             sampler: sampler
         )
     }
-    
 }
 
 /// A generation session with guided constraints
 public struct GuidedGenerationSession {
     let model: ModelContext
-    let processor: GuidedJSONProcessor
+    let processor: SyncGuidedJSONProcessor
     let sampler: GuidedSampler
     
     public func generate(prompt: String, maxTokens: Int = 512) async throws -> String {
