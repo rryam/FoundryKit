@@ -207,6 +207,74 @@ extension FoundryModelSession {
     }
 }
 
+// MARK: - Dynamic Schema Generation
+
+extension FoundryModelSession {
+    
+    /// Produces a response using a dynamic generation schema.
+    @discardableResult
+    public func respond(
+        to prompt: String,
+        schema: DynamicGenerationSchema,
+        options: FoundryGenerationOptions = FoundryGenerationOptions(),
+        isolation: isolated (any Actor)? = #isolation
+    ) async throws -> sending Response<GeneratedContent> {
+        // For now, MLX backend will use structured prompting
+        // Foundation backend can use native schema support
+        switch model {
+        case .foundation:
+            // Use Foundation Models' native dynamic schema support
+            // Convert our DynamicGenerationSchema to Foundation Models' version
+            let fmSchema = convertToFoundationModelSchema(schema)
+            let generationSchema = try FoundationModels.GenerationSchema(root: fmSchema, dependencies: [])
+            let session = LanguageModelSession(model: .default, guardrails: guardrails, tools: tools)
+            let response = try await session.respond(to: prompt, schema: generationSchema)
+            
+            // Convert to our response type
+            let transcriptEntries = session.transcript.entries.suffix(2)
+            updateTranscript(with: transcriptEntries)
+            return Response(content: response.content, transcriptEntries: transcriptEntries)
+            
+        case .mlx:
+            // For MLX, convert dynamic schema to structured prompt
+            throw FoundryGenerationError.unsupportedFeature(
+                FoundryGenerationError.Context(
+                    debugDescription: "Dynamic schema generation not yet supported for MLX models"
+                )
+            )
+        }
+    }
+    
+    /// Produces a response using a dynamic generation schema with a Prompt.
+    @discardableResult
+    public func respond(
+        to prompt: Prompt,
+        schema: DynamicGenerationSchema,
+        options: FoundryGenerationOptions = FoundryGenerationOptions(),
+        isolation: isolated (any Actor)? = #isolation
+    ) async throws -> sending Response<GeneratedContent> {
+        // For Foundation Models, we can leverage the native prompt support
+        switch model {
+        case .foundation:
+            let fmSchema = convertToFoundationModelSchema(schema)
+            let generationSchema = try FoundationModels.GenerationSchema(root: fmSchema, dependencies: [])
+            let session = LanguageModelSession(model: .default, guardrails: guardrails, tools: tools)
+            let response = try await session.respond(to: prompt, schema: generationSchema)
+            
+            let transcriptEntries = session.transcript.entries.suffix(2)
+            updateTranscript(with: transcriptEntries)
+            return Response(content: response.content, transcriptEntries: transcriptEntries)
+            
+        case .mlx:
+            throw FoundryGenerationError.unsupportedFeature(
+                FoundryGenerationError.Context(
+                    debugDescription: "Dynamic schema generation not yet supported for MLX models with Prompt"
+                )
+            )
+        }
+    }
+}
+
 // MARK: - Streaming Generation
 
 extension FoundryModelSession {
@@ -253,6 +321,37 @@ extension FoundryModelSession {
         for entry in entries {
             transcript.entries.append(entry)
         }
+    }
+    
+    private func convertToFoundationModelSchema(_ schema: DynamicGenerationSchema) -> FoundationModels.DynamicGenerationSchema {
+        // Handle anyOf case first
+        if let anyOf = schema.anyOf {
+            return FoundationModels.DynamicGenerationSchema(name: schema.name, anyOf: anyOf)
+        }
+        
+        // Convert properties to Foundation Models format
+        var convertedProperties: [FoundationModels.DynamicGenerationSchema.Property] = []
+        
+        for property in schema.properties {
+            let convertedSchema = convertToFoundationModelSchema(property.schema)
+            
+            // Create property
+            // Note: FoundationModels.DynamicGenerationSchema doesn't support required properties
+            // in the same way as our internal schema, so this information is lost in conversion
+            let fmProperty = FoundationModels.DynamicGenerationSchema.Property(
+                name: property.name,
+                schema: convertedSchema
+            )
+            convertedProperties.append(fmProperty)
+        }
+        
+        // Create schema with all properties
+        let fmSchema = FoundationModels.DynamicGenerationSchema(
+            name: schema.name,
+            properties: convertedProperties
+        )
+        
+        return fmSchema
     }
 }
 

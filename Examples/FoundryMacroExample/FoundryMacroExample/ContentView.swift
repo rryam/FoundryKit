@@ -8,11 +8,13 @@ struct ContentView: View {
     enum ModelType: String, CaseIterable {
         case product = "Product"
         case userProfile = "User Profile"
+        case guidedGeneration = "Guided Generation"
         
         var systemImage: String {
             switch self {
             case .product: return "shippingbox"
             case .userProfile: return "person.circle"
+            case .guidedGeneration: return "sparkle"
             }
         }
     }
@@ -27,19 +29,27 @@ struct ContentView: View {
             .navigationSplitViewColumnWidth(min: 200, ideal: 250)
             #endif
         } detail: {
-            ModelDetailView(modelType: selectedModel, showingMLXSchema: $showingMLXSchema)
-                .navigationTitle(selectedModel.rawValue)
-                #if os(iOS)
-                .navigationBarTitleDisplayMode(.large)
-                #endif
-                .toolbar {
-                    ToolbarItem(placement: .primaryAction) {
-                        Toggle(isOn: $showingMLXSchema) {
-                            Label("MLX Format", systemImage: showingMLXSchema ? "function" : "curlybraces")
+            if selectedModel == .guidedGeneration {
+                GuidedGenerationView()
+                    .navigationTitle(selectedModel.rawValue)
+                    #if os(iOS)
+                    .navigationBarTitleDisplayMode(.large)
+                    #endif
+            } else {
+                ModelDetailView(modelType: selectedModel, showingMLXSchema: $showingMLXSchema)
+                    .navigationTitle(selectedModel.rawValue)
+                    #if os(iOS)
+                    .navigationBarTitleDisplayMode(.large)
+                    #endif
+                    .toolbar {
+                        ToolbarItem(placement: .primaryAction) {
+                            Toggle(isOn: $showingMLXSchema) {
+                                Label("MLX Format", systemImage: showingMLXSchema ? "function" : "curlybraces")
+                            }
+                            .toggleStyle(.button)
                         }
-                        .toggleStyle(.button)
                     }
-                }
+            }
         }
     }
 }

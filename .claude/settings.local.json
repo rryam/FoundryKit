@@ -13,7 +13,9 @@
       "Bash(xcodebuild:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(swift -typecheck:*)",
+      "Bash(swift build:*)"
     ],
     "deny": [],
     "includeCoAuthoredBy": false

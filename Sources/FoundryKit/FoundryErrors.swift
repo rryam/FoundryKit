@@ -45,6 +45,9 @@ public enum FoundryGenerationError: Error, LocalizedError {
     /// A network error occurred while downloading or using a model.
     case networkError(Context)
     
+    /// The requested feature is not supported.
+    case unsupportedFeature(Context)
+    
     /// An unknown error occurred during generation.
     case unknown(Context)
     
@@ -68,6 +71,8 @@ public enum FoundryGenerationError: Error, LocalizedError {
             return "The model backend is not available on this platform."
         case .networkError:
             return "A network error occurred."
+        case .unsupportedFeature:
+            return "The requested feature is not supported."
         case .unknown:
             return "An unknown error occurred."
         }
@@ -93,6 +98,8 @@ public enum FoundryGenerationError: Error, LocalizedError {
             return "Use a different model or upgrade to a supported platform."
         case .networkError:
             return "Check your internet connection and try again."
+        case .unsupportedFeature:
+            return "Use an alternative approach or check the documentation for supported features."
         case .unknown:
             return "Try again or contact support if the problem persists."
         }
@@ -109,6 +116,7 @@ public enum FoundryGenerationError: Error, LocalizedError {
              .modelLoadingFailed(let context),
              .backendUnavailable(let context),
              .networkError(let context),
+             .unsupportedFeature(let context),
              .unknown(let context):
             return context.debugDescription
         }
