@@ -60,7 +60,7 @@ workflows:
       - name: Build Example App (iOS)
         script: |
           cd Examples/FoundryMacroExample
-          xcodebuild -scheme FoundryMacroExample_iOS \
+          xcodebuild -scheme FoundryMacroExample \
             -destination "platform=iOS Simulator,name=iPhone 16" \
             -configuration Debug \
             build
@@ -68,7 +68,7 @@ workflows:
       - name: Build Example App (macOS)
         script: |
           cd Examples/FoundryMacroExample
-          xcodebuild -scheme FoundryMacroExample_macOS \
+          xcodebuild -scheme FoundryMacroExample \
             -destination "platform=macOS" \
             -configuration Debug \
             build
