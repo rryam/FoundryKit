@@ -501,6 +501,14 @@ private func hasValidationRules(_ properties: [PropertyInfo]) -> Bool {
 }
 
 private func extractIntValue(from expr: ExprSyntax) -> Int? {
+    // Handle negative numbers wrapped in PrefixOperatorExprSyntax
+    if let prefixOp = expr.as(PrefixOperatorExprSyntax.self),
+       prefixOp.operator.text == "-",
+       let intLiteral = prefixOp.expression.as(IntegerLiteralExprSyntax.self) {
+        return -Int(intLiteral.literal.text)!
+    }
+    
+    // Handle positive numbers
     if let intLiteral = expr.as(IntegerLiteralExprSyntax.self) {
         return Int(intLiteral.literal.text)
     }
@@ -509,6 +517,13 @@ private func extractIntValue(from expr: ExprSyntax) -> Int? {
 
 private func extractStringValue(from expr: ExprSyntax) -> String? {
     if let stringLiteral = expr.as(StringLiteralExprSyntax.self) {
+        // Get the actual string content without quotes
+        let segments = stringLiteral.segments
+        if segments.count == 1,
+           let segment = segments.first?.as(StringSegmentSyntax.self) {
+            return segment.content.text
+        }
+        // Fallback for complex string literals
         return stringLiteral.segments.description.trimmingCharacters(in: CharacterSet(charactersIn: "\""))
     }
     return nil
@@ -598,18 +613,59 @@ private func generateExampleValue(for type: String, validation: ValidationInfo?,
 }
 
 private func serializeJSON(_ object: Any) throws -> String {
-    let data = try JSONSerialization.data(withJSONObject: object, options: .prettyPrinted)
-    var jsonString = String(data: data, encoding: .utf8) ?? "{}"
-    
-    // Convert to Swift dictionary literal format
-    jsonString = jsonString
-        .replacingOccurrences(of: "{\n", with: "[\n")
-        .replacingOccurrences(of: "\n}", with: "\n]")
-        .replacingOccurrences(of: "{", with: "[")
-        .replacingOccurrences(of: "}", with: "]")
-        .replacingOccurrences(of: " : ", with: ": ")
-    
-    return jsonString
+    // Convert the object to a Swift dictionary literal recursively
+    return convertToSwiftDictionaryLiteral(object, indent: "    ")
+}
+
+private func convertToSwiftDictionaryLiteral(_ value: Any, indent: String) -> String {
+    if let dict = value as? [String: Any] {
+        if dict.isEmpty {
+            return "[:]"
+        }
+        let nextIndent = indent + "    "
+        var result = "[\n"
+        let sortedKeys = dict.keys.sorted()
+        for (index, key) in sortedKeys.enumerated() {
+            result += "\(nextIndent)\"\(key)\": \(convertToSwiftDictionaryLiteral(dict[key]!, indent: nextIndent))"
+            if index < sortedKeys.count - 1 {
+                result += ","
+            }
+            result += "\n"
+        }
+        result += "\(indent)]"
+        return result
+    } else if let array = value as? [Any] {
+        if array.isEmpty {
+            return "[]"
+        }
+        let nextIndent = indent + "    "
+        var result = "[\n"
+        for (index, item) in array.enumerated() {
+            result += "\(nextIndent)\(convertToSwiftDictionaryLiteral(item, indent: nextIndent))"
+            if index < array.count - 1 {
+                result += ","
+            }
+            result += "\n"
+        }
+        result += "\(indent)]"
+        return result
+    } else if let string = value as? String {
+        // Escape quotes and backslashes in strings
+        let escaped = string
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+        return "\"\(escaped)\""
+    } else if let number = value as? NSNumber {
+        if CFBooleanGetTypeID() == CFGetTypeID(number) {
+            return number.boolValue ? "true" : "false"
+        } else {
+            return "\(number)"
+        }
+    } else if value is NSNull {
+        return "nil"
+    } else {
+        return "\"\(value)\""
+    }
 }
 
 extension String {

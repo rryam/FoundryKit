@@ -138,6 +138,52 @@ final class FoundryGenerableMacroSchemaTests: XCTestCase {
         }
     }
     
+    func testToolCallSchemaStructure() {
+        // Test the MLX tool call schema format
+        let toolSchema = DetailedTestModel.toolCallSchema
+        
+        // Verify top-level structure
+        XCTAssertEqual(toolSchema["type"] as? String, "function")
+        
+        // Verify function details
+        let function = toolSchema["function"] as? [String: Any]
+        XCTAssertNotNil(function)
+        XCTAssertEqual(function?["name"] as? String, "generate_detailed_test_model")
+        XCTAssertEqual(function?["description"] as? String, "Generate a structured DetailedTestModel object")
+        
+        // Verify parameters
+        let parameters = function?["parameters"] as? [String: Any]
+        XCTAssertNotNil(parameters)
+        XCTAssertEqual(parameters?["type"] as? String, "object")
+        
+        // Verify properties within parameters
+        let properties = parameters?["properties"] as? [String: Any]
+        XCTAssertNotNil(properties)
+        
+        // Verify name property in tool schema
+        let nameProp = properties?["name"] as? [String: Any]
+        XCTAssertEqual(nameProp?["type"] as? String, "string")
+        XCTAssertEqual(nameProp?["description"] as? String, "User's full name")
+        XCTAssertEqual(nameProp?["minLength"] as? Int, 2)
+        XCTAssertEqual(nameProp?["maxLength"] as? Int, 100)
+        
+        // Verify emails array property
+        let emailsProp = properties?["emails"] as? [String: Any]
+        XCTAssertEqual(emailsProp?["type"] as? String, "array")
+        XCTAssertEqual(emailsProp?["description"] as? String, "User's email addresses")
+        let emailItems = emailsProp?["items"] as? [String: String]
+        XCTAssertEqual(emailItems?["type"], "string")
+        
+        // Verify required fields
+        let required = parameters?["required"] as? [String]
+        XCTAssertNotNil(required)
+        XCTAssertTrue(required?.contains("name") ?? false)
+        XCTAssertTrue(required?.contains("age") ?? false)
+        XCTAssertTrue(required?.contains("status") ?? false)
+        XCTAssertTrue(required?.contains("emails") ?? false)
+        XCTAssertFalse(required?.contains("bio") ?? false)
+    }
+    
     private func prettyPrintJSON(_ object: Any) -> String {
         guard let data = try? JSONSerialization.data(withJSONObject: object, options: .prettyPrinted),
               let string = String(data: data, encoding: .utf8) else {

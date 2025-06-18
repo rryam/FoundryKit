@@ -21,6 +21,7 @@ final class FoundryGenerableMacroTests: XCTestCase {
         // Test that the macro generates the required properties
         XCTAssertNotNil(TestModel.generationSchema)
         XCTAssertNotNil(TestModel.jsonSchema)
+        XCTAssertNotNil(TestModel.toolCallSchema)
         
         // Test that example JSON is generated when validation rules are present
         XCTAssertNotNil(TestModel.exampleJSON)
@@ -83,5 +84,30 @@ final class FoundryGenerableMacroTests: XCTestCase {
             // Expected to fail with empty content
             XCTAssertTrue(true)
         }
+    }
+    
+    func testToolCallSchema() {
+        let toolSchema = TestModel.toolCallSchema
+        
+        // Verify it's a function type
+        XCTAssertEqual(toolSchema["type"] as? String, "function")
+        
+        // Verify function details
+        let function = toolSchema["function"] as? [String: Any]
+        XCTAssertNotNil(function)
+        XCTAssertEqual(function?["name"] as? String, "generate_test_model")
+        XCTAssertEqual(function?["description"] as? String, "Generate a structured TestModel object")
+        
+        // Verify parameters exist
+        let parameters = function?["parameters"] as? [String: Any]
+        XCTAssertNotNil(parameters)
+        XCTAssertEqual(parameters?["type"] as? String, "object")
+        
+        // Verify required fields include non-optional properties
+        let required = parameters?["required"] as? [String]
+        XCTAssertNotNil(required)
+        XCTAssertTrue(required?.contains("name") ?? false)
+        XCTAssertTrue(required?.contains("age") ?? false)
+        XCTAssertFalse(required?.contains("email") ?? false) // email is optional
     }
 }
