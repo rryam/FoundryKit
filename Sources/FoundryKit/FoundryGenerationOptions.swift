@@ -56,6 +56,18 @@ public struct FoundryGenerationOptions: Sendable, Equatable {
     /// The maximum number of tokens to generate.
     public var maxTokens: Int?
     
+    /// The maximum number of output tokens (alias for maxTokens for MLX compatibility).
+    public var maxOutputTokens: Int? {
+        get { maxTokens }
+        set { maxTokens = newValue }
+    }
+    
+    /// Top-p sampling parameter for MLX backend.
+    public var topP: Double?
+    
+    /// Whether to use guided generation with token-level constraints (MLX only).
+    public var useGuidedGeneration: Bool
+    
     /// Creates generation options with default values.
     public init() {
         self.sampling = nil
@@ -63,6 +75,8 @@ public struct FoundryGenerationOptions: Sendable, Equatable {
         self.frequencyPenalty = nil
         self.presencePenalty = nil
         self.maxTokens = nil
+        self.topP = nil
+        self.useGuidedGeneration = false
     }
     
     /// Creates generation options with the specified parameters.
@@ -71,13 +85,17 @@ public struct FoundryGenerationOptions: Sendable, Equatable {
         temperature: Double? = nil,
         frequencyPenalty: Double? = nil,
         presencePenalty: Double? = nil,
-        maxTokens: Int? = nil
+        maxTokens: Int? = nil,
+        topP: Double? = nil,
+        useGuidedGeneration: Bool = false
     ) {
         self.sampling = sampling
         self.temperature = temperature
         self.frequencyPenalty = frequencyPenalty
         self.presencePenalty = presencePenalty
         self.maxTokens = maxTokens
+        self.topP = topP
+        self.useGuidedGeneration = useGuidedGeneration
     }
     
     public static func == (lhs: FoundryGenerationOptions, rhs: FoundryGenerationOptions) -> Bool {
@@ -85,7 +103,9 @@ public struct FoundryGenerationOptions: Sendable, Equatable {
         lhs.temperature == rhs.temperature &&
         lhs.frequencyPenalty == rhs.frequencyPenalty &&
         lhs.presencePenalty == rhs.presencePenalty &&
-        lhs.maxTokens == rhs.maxTokens
+        lhs.maxTokens == rhs.maxTokens &&
+        lhs.topP == rhs.topP &&
+        lhs.useGuidedGeneration == rhs.useGuidedGeneration
     }
 }
 

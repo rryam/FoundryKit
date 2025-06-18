@@ -2,17 +2,21 @@ import Foundation
 import MLX
 import MLXLLM
 import MLXLMCommon
-import Tokenizers
+@preconcurrency import Tokenizers
 
 /// Schema representation specific to guided generation (to avoid conflicts)
 // Using RuntimeGenerationSchema from GenerationSchema.swift
 public typealias GuidedGenerationSchema = RuntimeGenerationSchema
 
+// MARK: - MLX LogitProcessor Integration
+
 /// A constraint processor for guided JSON generation
-public final class GuidedJSONProcessor {
-    private var parseState: JSONParseState
+/// Now conforms to MLX's LogitProcessor protocol for token-level constraints!
+public final class GuidedJSONProcessor: LogitProcessor, @unchecked Sendable {
     private let schema: GuidedGenerationSchema
     private let tokenizer: Tokenizer
+    private let lock = NSLock()
+    private var parseState: JSONParseState
     private var validTokenCache: [String: Set<Int>] = [:]
     
     public init(schema: GuidedGenerationSchema, tokenizer: Tokenizer) {
@@ -21,20 +25,60 @@ public final class GuidedJSONProcessor {
         self.parseState = JSONParseState(schema: schema)
     }
     
-    /// Process logits to constrain next token generation
-    public func processLogits(_ logits: MLXArray, vocabularySize: Int) -> MLXArray {
+    // MARK: - LogitProcessor Protocol
+    
+    public func prompt(_ prompt: MLXArray) {
+        lock.lock()
+        defer { lock.unlock() }
+        // Reset state when a new prompt starts
+        self.parseState = JSONParseState(schema: schema)
+        self.validTokenCache.removeAll()
+    }
+    
+    public func didSample(token: MLXArray) {
+        lock.lock()
+        defer { lock.unlock() }
+        // Update parse state with the sampled token
+        let tokenId = token.item(Int.self)
+        updateStateWithToken(tokenId)
+    }
+    
+    public func process(logits: MLXArray) -> MLXArray {
+        lock.lock()
+        defer { lock.unlock() }
+        
         let validTokenIds = getValidTokenIds()
         
-        // Create mask with -inf for invalid tokens
-        var mask = [Float](repeating: -Float.infinity, count: vocabularySize)
-        for tokenId in validTokenIds {
-            mask[tokenId] = 0
+        // If we're complete or have no constraints, return original logits
+        if parseState.isComplete || validTokenIds.isEmpty {
+            return logits
         }
         
-        // Apply mask to logits
-        let maskArray = MLXArray(mask)
-        return logits + maskArray
+        // Get vocabulary size from logits shape
+        let vocabSize = logits.shape.last ?? 0
+        
+        // Create mask: 1 for valid tokens, 0 for invalid
+        var maskValues = [Float](repeating: 0, count: vocabSize)
+        for tokenId in validTokenIds {
+            if tokenId < vocabSize {
+                maskValues[tokenId] = 1
+            }
+        }
+        
+        let mask = MLXArray(maskValues).reshaped(1, vocabSize)
+        
+        // Apply mask: set invalid tokens to -inf
+        // Use broadcasting to apply mask
+        let maskedLogits = MLX.where(
+            mask .== 0,
+            MLXArray(-Float.infinity),
+            logits
+        )
+        
+        return maskedLogits
     }
+    
+    // MARK: - Private Methods
     
     private func getValidTokenIds() -> Set<Int> {
         let stateKey = parseState.currentStateKey
@@ -50,14 +94,23 @@ public final class GuidedJSONProcessor {
         
         // Map characters to token IDs
         for char in validChars {
-            let tokens = tokenizer.encode(text: String(char))
+            let charString = String(char)
+            
+            // Get all tokens that could produce this character
+            let tokens = tokenizer.encode(text: charString)
             validTokenIds.formUnion(tokens)
+            
+            // Note: Checking all tokens is computationally expensive
+            // In a real implementation, we'd need a more efficient approach
+            // For now, we'll skip the prefix check
         }
         
-        // Always allow special tokens
-        // Add common end tokens
-        let eosTokens = tokenizer.encode(text: "</s>")
-        validTokenIds.formUnion(eosTokens)
+        // Always allow EOS token if JSON is complete
+        if parseState.isComplete {
+            if let eosId = tokenizer.eosTokenId {
+                validTokenIds.insert(eosId)
+            }
+        }
         
         // Cache the result
         validTokenCache[stateKey] = validTokenIds
@@ -65,11 +118,43 @@ public final class GuidedJSONProcessor {
         return validTokenIds
     }
     
-    public func update(with token: Int) {
-        let text = tokenizer.decode(tokens: [token])
+    private func updateStateWithToken(_ tokenId: Int) {
+        // Clear cache as state will change
+        validTokenCache.removeAll()
+        
+        // Update parse state if we can decode the token
+        let text = tokenizer.decode(tokens: [tokenId])
         parseState.advance(with: text)
     }
 }
+
+// MARK: - Custom LogitSampler for Guided Generation
+
+/// A sampler that works with guided generation constraints
+public struct GuidedSampler: LogitSampler {
+    private let temperature: Float
+    private let topP: Float
+    
+    public init(temperature: Float = 0.7, topP: Float = 1.0) {
+        self.temperature = temperature
+        self.topP = topP
+    }
+    
+    public func sample(logits: MLXArray) -> MLXArray {
+        // The logits have already been processed by GuidedJSONProcessor
+        // Use appropriate sampling based on temperature
+        if temperature == 0 {
+            return argMax(logits, axis: -1)
+        } else {
+            // Use categorical sampling with temperature
+            let scaledLogits = logits / MLXArray(temperature)
+            let probs = softmax(scaledLogits, axis: -1)
+            return MLXRandom.categorical(probs)
+        }
+    }
+}
+
+// MARK: - JSON Parse State
 
 /// Tracks the current state of JSON parsing and determines valid next characters
 class JSONParseState {
@@ -95,6 +180,13 @@ class JSONParseState {
     
     init(schema: GuidedGenerationSchema) {
         self.schema = schema
+    }
+    
+    var isComplete: Bool {
+        if case .complete = state {
+            return true
+        }
+        return false
     }
     
     var currentStateKey: String {
@@ -146,61 +238,54 @@ class JSONParseState {
         case .expectingColon:
             return [":"]
             
-        case .expectingValue(_, _, let type):
-            switch type {
-            case .string:
-                return ["\""]
-            case .number:
-                return Set("0123456789-.")
-            case .boolean:
-                return Set("tf")
-            case .array:
-                return ["["]
-            case .object:
-                return ["{"]
-            case .null:
-                return ["n"]
-            }
+        case let .expectingValue(_, _, type):
+            return getValidValueStartCharacters(for: type)
             
-        case .inStringValue:
+        case .inStringValue(_, _, let partial):
             // Allow any character except unescaped quotes
-            return Set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 !#$%&'()*+,-./:;<=>?@[\\]^_`{|}~\"")
+            var validChars = Set<Character>()
+            for c in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .,!?-_@#$%^&*()[]{}+=/<>:;" {
+                validChars.insert(c)
+            }
+            if !partial.hasSuffix("\\") {
+                validChars.insert("\"")
+            }
+            return validChars
             
         case .inNumberValue(_, _, let partial):
-            var validChars = Set("0123456789")
+            var validChars = Set<Character>("0123456789")
             if !partial.contains(".") {
                 validChars.insert(".")
             }
-            if partial.isEmpty {
+            if partial.isEmpty || partial == "-" {
                 validChars.insert("-")
             }
-            // Allow ending the number
-            validChars.formUnion([",", "}", "]"])
+            // Can end number with comma or closing brace
+            if !partial.isEmpty && partial != "-" {
+                validChars.insert(",")
+                validChars.insert("}")
+            }
             return validChars
             
         case .inBooleanValue(_, _, let partial):
-            if partial.isEmpty {
-                return ["t", "f"]
-            } else if partial == "t" {
-                return ["r"]
-            } else if partial == "tr" {
-                return ["u"]
-            } else if partial == "tru" {
-                return ["e"]
-            } else if partial == "f" {
-                return ["a"]
-            } else if partial == "fa" {
-                return ["l"]
-            } else if partial == "fal" {
-                return ["s"]
-            } else if partial == "fals" {
-                return ["e"]
+            if "true".hasPrefix(partial) {
+                let nextIndex = "true".index("true".startIndex, offsetBy: partial.count)
+                if nextIndex < "true".endIndex {
+                    return ["true"[nextIndex]]
+                }
             }
-            return [",", "}", "]"]
+            if "false".hasPrefix(partial) {
+                let nextIndex = "false".index("false".startIndex, offsetBy: partial.count)
+                if nextIndex < "false".endIndex {
+                    return ["false"[nextIndex]]
+                }
+            }
+            return [",", "}"]
             
-        case .inArray:
-            // Simplified - would need more complex handling
-            return ["]", "{", "\"", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "-", "t", "f", "n"]
+        case let .inArray(_, _, elementType, _):
+            var validChars = getValidValueStartCharacters(for: elementType)
+            validChars.insert("]")
+            return validChars
             
         case .afterValue:
             return [",", "}"]
@@ -213,36 +298,34 @@ class JSONParseState {
     func advance(with text: String) {
         buffer += text
         
-        // Update state based on the new text
-        // This is a simplified version - a full implementation would need
-        // more sophisticated state tracking
-        updateState()
+        // Process each character
+        for char in text {
+            processCharacter(char)
+        }
     }
     
-    private func updateState() {
-        // This would contain the full state machine logic
-        // For brevity, showing simplified transitions
-        switch state {
-        case .start:
-            if buffer.hasSuffix("{") {
-                state = .expectingPropertyName(path: [])
+    private func processCharacter(_ char: Character) {
+        // State machine transitions based on character
+        // This is a simplified implementation
+        switch (state, char) {
+        case (.start, "{"):
+            state = .expectingPropertyName(path: [])
+            
+        case (.expectingPropertyName, "\""):
+            state = .inPropertyName(path: getCurrentPath(), partial: "")
+            
+        case (.inPropertyName(let path, let partial), "\""):
+            state = .afterPropertyName(path: path, property: partial)
+            
+        case (.inPropertyName(let path, let partial), _):
+            state = .inPropertyName(path: path, partial: partial + String(char))
+            
+        case (.afterPropertyName(let path, let prop), ":"):
+            if let propSchema = getPropertySchema(name: prop, at: path) {
+                state = .expectingValue(path: path, property: prop, type: propSchema.type)
             }
             
-        case .expectingPropertyName:
-            if buffer.hasSuffix("\"") {
-                state = .inPropertyName(path: getCurrentPath(), partial: "")
-            }
-            
-        case .inPropertyName(let path, var partial):
-            if let lastChar = buffer.last, lastChar != "\"" {
-                partial.append(lastChar)
-                state = .inPropertyName(path: path, partial: partial)
-            } else if buffer.hasSuffix("\"") {
-                state = .afterPropertyName(path: path, property: partial)
-            }
-            
-        // ... more state transitions ...
-            
+        // Add more state transitions as needed
         default:
             break
         }
@@ -252,9 +335,9 @@ class JSONParseState {
         switch state {
         case .inObject(let path), .expectingPropertyName(let path),
              .inPropertyName(let path, _), .afterPropertyName(let path, _),
-             .expectingColon(let path, _), .expectingValue(let path, _, _),
-             .inStringValue(let path, _, _), .inNumberValue(let path, _, _),
-             .inBooleanValue(let path, _, _), .inArray(let path, _, _, _),
+             .expectingColon(let path, _), let .expectingValue(path, _, _),
+             let .inStringValue(path, _, _), let .inNumberValue(path, _, _),
+             let .inBooleanValue(path, _, _), let .inArray(path, _, _, _),
              .afterValue(let path):
             return path
         default:
@@ -263,21 +346,110 @@ class JSONParseState {
     }
     
     private func getValidPropertyNames(at path: [String]) -> Set<String> {
-        // Get valid properties from schema at the current path
-        return schema.getValidProperties(at: path)
+        // Get valid property names from schema based on current path
+        var validNames = Set<String>()
+        
+        // For root level
+        if path.isEmpty {
+            for (propName, _) in schema.root.properties {
+                validNames.insert(propName)
+            }
+        }
+        
+        return validNames
+    }
+    
+    private func getPropertySchema(name: String, at path: [String]) -> SchemaNode? {
+        // Find property schema based on name and path
+        if path.isEmpty {
+            return schema.root.properties[name]
+        }
+        return nil
+    }
+    
+    private func getValidValueStartCharacters(for type: SchemaType) -> Set<Character> {
+        switch type {
+        case .string:
+            return ["\""]
+        case .number, .integer:
+            return Set("0123456789-")
+        case .boolean:
+            return ["t", "f"] // for true/false
+        case .array:
+            return ["["]
+        case .object:
+            return ["{"]
+        case .null:
+            return ["n"] // for null
+        case .any:
+            var chars = Set<Character>()
+            chars.formUnion(["\"", "{", "[", "t", "f", "n"])
+            chars.formUnion("0123456789-")
+            return chars
+        }
     }
 }
 
-/// Schema type enumeration for guided generation
-public indirect enum SchemaType {
-    case string
-    case number
-    case boolean
-    case array(elementType: SchemaType)
-    case object(properties: [String: SchemaType])
-    case null
+// MARK: - MLX Integration Extensions
+
+extension MLXBackend {
+    /// Create a guided generation session with token-level constraints
+    internal func createGuidedSession(
+        schema: RuntimeGenerationSchema,
+        temperature: Float = 0.7,
+        topP: Float = 1.0
+    ) -> GuidedGenerationSession? {
+        guard let mlxModel = getMLXModel() else { return nil }
+        
+        // Create the guided processor
+        let processor = GuidedJSONProcessor(
+            schema: schema,
+            tokenizer: mlxModel.tokenizer
+        )
+        
+        // Create the sampler
+        let sampler = GuidedSampler(temperature: temperature, topP: topP)
+        
+        return GuidedGenerationSession(
+            model: mlxModel,
+            processor: processor,
+            sampler: sampler
+        )
+    }
+    
 }
 
-// MARK: - Future MLX Integration
-// When MLX supports logit processors, the GuidedJSONProcessor above can be integrated
-// to provide true constrained generation at the token level.
+/// A generation session with guided constraints
+public struct GuidedGenerationSession {
+    let model: ModelContext
+    let processor: GuidedJSONProcessor
+    let sampler: GuidedSampler
+    
+    public func generate(prompt: String, maxTokens: Int = 512) async throws -> String {
+        // Use MLX's generate function with our custom processor and sampler
+        let input = try await model.processor.prepare(
+            input: UserInput(chat: [.user(prompt)], processing: .init())
+        )
+        
+        let parameters = GenerateParameters(maxTokens: maxTokens)
+        
+        // Create token iterator with our guided processor and sampler
+        let iterator = try TokenIterator(
+            input: input,
+            model: model.model,
+            cache: model.model.newCache(parameters: parameters),
+            processor: processor,
+            sampler: sampler,
+            maxTokens: maxTokens
+        )
+        
+        // Generate tokens
+        var result = ""
+        for token in iterator {
+            let decoded = model.tokenizer.decode(tokens: [token])
+            result += decoded
+        }
+        
+        return result
+    }
+}

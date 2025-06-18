@@ -82,6 +82,15 @@ internal final class MLXBackend: FoundryBackend, @unchecked Sendable {
         includeSchemaInPrompt: Bool,
         options: FoundryGenerationOptions
     ) async throws -> BackendResponse<Content> where Content: Generable & Sendable {
+        // Check if guided generation is requested
+        if options.useGuidedGeneration, let schema = try? extractSchema(from: type) {
+            return try await respondWithGuidedGeneration(
+                to: prompt,
+                generating: type,
+                schema: schema,
+                options: options
+            )
+        }
         await loadModelIfNeeded()
         
         guard let chatSession = self.chatSession else {
@@ -262,6 +271,92 @@ internal final class MLXBackend: FoundryBackend, @unchecked Sendable {
     
     // Track current generation type for schema access
     private var currentGenerationType: Any.Type?
+    
+    // MARK: - Guided Generation
+    
+    private func respondWithGuidedGeneration<Content>(
+        to prompt: String,
+        generating type: Content.Type,
+        schema: [String: Any],
+        options: FoundryGenerationOptions
+    ) async throws -> BackendResponse<Content> where Content: Generable & Sendable {
+        await loadModelIfNeeded()
+        
+        guard let mlxModel = self.mlxModel else {
+            throw FoundryGenerationError.modelLoadingFailed(
+                FoundryGenerationError.Context(
+                    debugDescription: "Failed to load MLX model for guided generation"
+                )
+            )
+        }
+        
+        // Convert schema to RuntimeGenerationSchema
+        let schemaNode = SchemaNode(from: schema, name: String(describing: type))
+        let runtimeSchema = RuntimeGenerationSchema(
+            root: schemaNode,
+            dependencies: []
+        )
+        
+        // Create guided processor
+        let processor = GuidedJSONProcessor(
+            schema: runtimeSchema,
+            tokenizer: mlxModel.tokenizer
+        )
+        
+        // Create sampler with generation options
+        let temperature = Float(options.temperature ?? 0.7)
+        let topP = Float(options.topP ?? 1.0)
+        let sampler = GuidedSampler(temperature: temperature, topP: topP)
+        
+        // Prepare input
+        let input = try await mlxModel.processor.prepare(
+            input: UserInput(chat: [.user(prompt)], processing: .init())
+        )
+        
+        // Generate with guided constraints
+        let parameters = GenerateParameters(
+            maxTokens: options.maxOutputTokens ?? 512,
+            temperature: temperature,
+            topP: topP
+        )
+        
+        let iterator = try TokenIterator(
+            input: input,
+            model: mlxModel.model,
+            cache: mlxModel.model.newCache(parameters: parameters),
+            processor: processor,
+            sampler: sampler,
+            maxTokens: parameters.maxTokens
+        )
+        
+        // Generate tokens
+        var result = ""
+        for token in iterator {
+            let decoded = mlxModel.tokenizer.decode(tokens: [token])
+            result += decoded
+        }
+        
+        // Parse the result
+        let parsedContent = try parseStructuredResponse(result, into: type)
+        
+        // Create transcript entries
+        let promptEntry = createTranscriptEntry(role: "user", content: prompt)
+        let responseEntry = createTranscriptEntry(role: "assistant", content: result)
+        
+        return BackendResponse(
+            content: parsedContent,
+            transcriptEntries: [promptEntry, responseEntry][...]
+        )
+    }
+    
+    // Removed extractProperties - using SchemaNode's init(from:name:) instead
+    
+    // MARK: - Internal Helpers for Guided Generation
+    
+    /// Get MLX model for guided generation
+    internal func getMLXModel() -> ModelContext? {
+        return mlxModel
+    }
     
     private func parseStructuredResponse<T: Generable>(
         _ response: String,
