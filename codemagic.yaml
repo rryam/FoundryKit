@@ -34,7 +34,10 @@ workflows:
       
       - name: Run Tests
         script: |
-          swift test
+          xcodebuild test \
+            -scheme "$XCODE_SCHEME" \
+            -destination "platform=iOS Simulator,name=iPhone 16" \
+            -skipPackagePluginValidation
       
       - name: Build Framework for Multiple Platforms
         script: |
