@@ -1,0 +1,77 @@
+definitions:
+  triggering:
+    push: &events
+      events:
+        - push
+        - pull_request
+
+workflows:
+  foundrykit:
+    name: FoundryKit Workflow
+    instance_type: mac_mini_m2
+    environment:
+      xcode: 26.0
+      vars:
+        XCODE_SCHEME: "FoundryKit"
+        APP_ID: "FoundryKit"
+    when:
+      changeset:
+        includes:
+          - 'Sources'
+          - 'Tests'
+          - 'Examples'
+          - 'Package.swift'
+    triggering:
+      <<: *events
+    scripts:
+      - name: Install dependencies
+        script: |
+          brew install xcodegen
+      
+      - name: Build Swift Package
+        script: |
+          swift build
+      
+      - name: Run Tests
+        script: |
+          swift test
+      
+      - name: Build Framework for Multiple Platforms
+        script: |
+          #!/bin/zsh
+          
+          declare -a DESTINATIONS=("platform=iOS Simulator,name=iPhone 16" "platform=macOS" "platform=visionOS Simulator,name=Apple Vision Pro")
+          for DESTINATION in "${DESTINATIONS[@]}"
+            do
+              xcodebuild clean build \
+                -scheme "$XCODE_SCHEME" \
+                -destination "$DESTINATION" \
+                -skipPackagePluginValidation
+          done
+      
+      - name: Generate Example App Project
+        script: |
+          cd Examples/FoundryMacroExample
+          xcodegen generate
+      
+      - name: Build Example App (iOS)
+        script: |
+          cd Examples/FoundryMacroExample
+          xcodebuild -scheme FoundryMacroExample_iOS \
+            -destination "platform=iOS Simulator,name=iPhone 16" \
+            -configuration Debug \
+            build
+      
+      - name: Build Example App (macOS)
+        script: |
+          cd Examples/FoundryMacroExample
+          xcodebuild -scheme FoundryMacroExample_macOS \
+            -destination "platform=macOS" \
+            -configuration Debug \
+            build
+    
+    artifacts:
+      - build/**/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+    
