@@ -7,8 +7,15 @@
       "Bash(rm:*)",
       "Bash(mkdir:*)",
       "Bash(mv:*)",
-      "Bash(swift test:*)"
+      "Bash(swift test:*)",
+      "Bash(git checkout:*)",
+      "Bash(xcodegen generate:*)",
+      "Bash(xcodebuild:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ],
-    "deny": []
+    "deny": [],
+    "includeCoAuthoredBy": false
   }
 }

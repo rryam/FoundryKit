@@ -2,14 +2,14 @@ name: FoundryMacroExample
 options:
   bundleIdPrefix: com.foundrykit
   deploymentTarget:
-    iOS: "18.0"
-    macOS: "15.0"
-  
+    iOS: "26.0"
+    macOS: "26.0"
+
 targets:
   FoundryMacroExample:
     type: application
     platform: [iOS, macOS]
-    sources: 
+    sources:
       - FoundryMacroExample
     dependencies:
       - package: FoundryKit
@@ -23,7 +23,7 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
-        SWIFT_VERSION: 6.0
+        SWIFT_VERSION: 6.2
         SWIFT_STRICT_CONCURRENCY: complete
         SWIFT_EMIT_LOC_STRINGS: YES
         INFOPLIST_KEY_CFBundleDisplayName: "Foundry Macro Example"
