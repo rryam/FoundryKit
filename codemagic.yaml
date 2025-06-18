@@ -28,6 +28,10 @@ workflows:
         script: |
           brew install xcodegen
       
+      - name: Download Metal Toolchain
+        script: |
+          xcodebuild -downloadComponent MetalToolchain
+      
       - name: Build Swift Package
         script: |
           swift build
