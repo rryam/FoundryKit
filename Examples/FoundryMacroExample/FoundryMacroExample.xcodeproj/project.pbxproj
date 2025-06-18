@@ -8,12 +8,14 @@
 
 /* Begin PBXBuildFile section */
 		2341D74337940860F5695C08 /* FoundryMacroExampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C719CC205B16D17610EB6355 /* FoundryMacroExampleApp.swift */; };
+		39932991932D17590C921A21 /* GuidedGenerationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FC52DF1E3067E0CF7E5128A /* GuidedGenerationView.swift */; };
 		3B4C132B848C6AD0330D818A /* FoundryMacroExampleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C719CC205B16D17610EB6355 /* FoundryMacroExampleApp.swift */; };
 		4D7DBFC537E1E88B3A5585CC /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3ADDA27895EB9172513F3362 /* Models.swift */; };
 		69CEB360721073A6223C0243 /* FoundryKit in Frameworks */ = {isa = PBXBuildFile; productRef = BF5158EFD7E1146E04F31194 /* FoundryKit */; };
 		A427179CCF1E1FB6157F3EF4 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3ADDA27895EB9172513F3362 /* Models.swift */; };
 		C12E8677A6A323877D7C9460 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 432FC93A305E71FAD4B1E254 /* ContentView.swift */; };
 		D6233A262AC35E9F10217D20 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 432FC93A305E71FAD4B1E254 /* ContentView.swift */; };
+		ECF7D00E4D39738C7D346610 /* GuidedGenerationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FC52DF1E3067E0CF7E5128A /* GuidedGenerationView.swift */; };
 		FBC7FC1B9ABA25449BDB9825 /* FoundryKit in Frameworks */ = {isa = PBXBuildFile; productRef = AC61771EB0BEE03BE247A1A7 /* FoundryKit */; };
 /* End PBXBuildFile section */
 
@@ -21,6 +23,7 @@
 		3ADDA27895EB9172513F3362 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		432FC93A305E71FAD4B1E254 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		68A3A1EDCFEA0ED1A1CC3D39 /* FoundryMacroExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FoundryMacroExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8FC52DF1E3067E0CF7E5128A /* GuidedGenerationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuidedGenerationView.swift; sourceTree = "<group>"; };
 		99E8F97523597BC1EB122B7D /* FoundryMacroExample.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = FoundryMacroExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BCC8DD3C7968D33F2E3D90D1 /* FoundryKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FoundryKit; path = ../..; sourceTree = SOURCE_ROOT; };
 		C719CC205B16D17610EB6355 /* FoundryMacroExampleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoundryMacroExampleApp.swift; sourceTree = "<group>"; };
@@ -77,6 +80,7 @@
 			children = (
 				432FC93A305E71FAD4B1E254 /* ContentView.swift */,
 				C719CC205B16D17610EB6355 /* FoundryMacroExampleApp.swift */,
+				8FC52DF1E3067E0CF7E5128A /* GuidedGenerationView.swift */,
 				3ADDA27895EB9172513F3362 /* Models.swift */,
 			);
 			path = FoundryMacroExample;
@@ -162,6 +166,7 @@
 			files = (
 				C12E8677A6A323877D7C9460 /* ContentView.swift in Sources */,
 				2341D74337940860F5695C08 /* FoundryMacroExampleApp.swift in Sources */,
+				ECF7D00E4D39738C7D346610 /* GuidedGenerationView.swift in Sources */,
 				A427179CCF1E1FB6157F3EF4 /* Models.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -172,6 +177,7 @@
 			files = (
 				D6233A262AC35E9F10217D20 /* ContentView.swift in Sources */,
 				3B4C132B848C6AD0330D818A /* FoundryMacroExampleApp.swift in Sources */,
+				39932991932D17590C921A21 /* GuidedGenerationView.swift in Sources */,
 				4D7DBFC537E1E88B3A5585CC /* Models.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -205,7 +211,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_STRICT_CONCURRENCY = complete;
-				SWIFT_VERSION = 6.0;
+				SWIFT_VERSION = 6.2;
 			};
 			name = Release;
 		};
@@ -235,7 +241,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_STRICT_CONCURRENCY = complete;
-				SWIFT_VERSION = 6.0;
+				SWIFT_VERSION = 6.2;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
@@ -266,7 +272,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_STRICT_CONCURRENCY = complete;
-				SWIFT_VERSION = 6.0;
+				SWIFT_VERSION = 6.2;
 			};
 			name = Debug;
 		};
@@ -315,8 +321,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -377,8 +383,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -415,7 +421,7 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_STRICT_CONCURRENCY = complete;
-				SWIFT_VERSION = 6.0;
+				SWIFT_VERSION = 6.2;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;

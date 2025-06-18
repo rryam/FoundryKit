@@ -17,7 +17,8 @@
       "Bash(swift -typecheck:*)",
       "Bash(swift build:*)",
       "Bash(git cherry-pick:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "includeCoAuthoredBy": false
