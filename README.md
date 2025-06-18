@@ -8,15 +8,23 @@ FoundryKit provides a single, Foundation Models-style API that works with both:
 - **MLX Models**: Open-source models from Hugging Face (Mistral, Llama, Qwen, etc.)
 - **Foundation Models**: Apple's on-device language models (Apple Intelligence)
 
+## Support
+
+Love this project? Check out my books to explore more of AI and iOS development:
+- [Exploring AI for iOS Development](https://academy.rudrank.com/product/ai)
+- [Exploring AI-Assisted Coding for iOS Development](https://academy.rudrank.com/product/ai-assisted-coding)
+
+Your support helps to keep this project growing!
+
 ## Features
 
-✅ **Unified API**: Same interface for both MLX and Foundation Models  
-✅ **Foundation Models Style**: Uses familiar `@Generable`, `GenerationOptions`, `Instructions`  
-✅ **Namespaced Types**: All types prefixed with `Foundry` to avoid conflicts (e.g., `FoundryGenerable`)  
-✅ **Structured Generation**: Type-safe output with `@Generable` structs  
-✅ **Streaming Support**: Real-time response streaming with AsyncSequence  
-✅ **Full Swift 6 Support**: Complete concurrency safety with Sendable conformance  
-✅ **Zero Learning Curve**: If you know Foundation Models, you know FoundryKit
+**Unified API**: Same interface for both MLX and Foundation Models  
+**Foundation Models Style**: Uses familiar `@Generable`, `GenerationOptions`, `Instructions`  
+**Namespaced Types**: All types prefixed with `Foundry` to avoid conflicts (e.g., `FoundryGenerable`)  
+**Structured Generation**: Type-safe output with `@Generable` structs  
+**Streaming Support**: Real-time response streaming with AsyncSequence  
+**Full Swift 6 Support**: Complete concurrency safety with Sendable conformance  
+**Zero Learning Curve**: If you know Foundation Models, you know FoundryKit
 
 ## Installation
 
