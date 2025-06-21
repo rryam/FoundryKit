@@ -11,11 +11,11 @@ struct IntegrationTests {
     func testModelSessionCreation() {
         // Test MLX model session creation
         let mlxSession = FoundryModelSession(model: .mlx("test-model"))
-        #expect(mlxSession.model != nil)
+        #expect(mlxSession.model.isMLX)
         
         // Test Foundation model session creation
         let foundationSession = FoundryModelSession(model: .foundation)
-        #expect(foundationSession.model != nil)
+        #expect(foundationSession.model.isFoundation)
     }
     
     @Test("Generation options creation and validation")

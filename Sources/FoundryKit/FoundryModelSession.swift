@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import FoundationModels
+import MLXLMCommon
 
 /// A session for generating responses using language models.
 ///
@@ -23,6 +24,21 @@ public final class FoundryModelSession {
     public let instructions: Instructions?
     
     /// The current conversation transcript.
+    ///
+    /// This property provides read-only access to the conversation history,
+    /// including all prompts and responses. The transcript is automatically
+    /// updated after each interaction.
+    ///
+    /// Example usage:
+    /// ```swift
+    /// let session = FoundryModelSession()
+    /// let response = try await session.respond(to: "Hello")
+    /// 
+    /// // Access the transcript
+    /// for entry in session.transcript.entries {
+    ///     print("Role: \(entry.role), Content: \(entry.content)")
+    /// }
+    /// ```
     public private(set) var transcript: Transcript
     
     // Internal backend implementations
@@ -309,6 +325,119 @@ extension FoundryModelSession {
             options: options
         )
         return ResponseStream(stream)
+    }
+}
+
+// MARK: - Utility Methods
+
+extension FoundryModelSession {
+    
+    /// Extracts JSON from a model response that may contain additional text.
+    ///
+    /// This utility method helps parse JSON from model responses that might include
+    /// markdown formatting, explanatory text, or other non-JSON content.
+    ///
+    /// Example usage:
+    /// ```swift
+    /// let response = "Here's the JSON: ```json\n{\"name\": \"John\"}\n```"
+    /// if let json = FoundryModelSession.extractJSON(from: response) {
+    ///     // Use the extracted JSON string
+    /// }
+    /// ```
+    ///
+    /// - Parameter response: The model's response that may contain JSON
+    /// - Returns: The extracted JSON string, or nil if no valid JSON is found
+    public static func extractJSON(from response: String) -> String? {
+        return JSONExtractor.extractJSON(from: response)
+    }
+    
+    /// Attempts to repair common JSON errors in model responses.
+    ///
+    /// This method fixes common JSON issues like trailing commas, missing quotes,
+    /// and single quotes instead of double quotes.
+    ///
+    /// Example usage:
+    /// ```swift
+    /// let malformedJSON = "{name: 'John', age: 30,}"
+    /// if let repaired = FoundryModelSession.repairJSON(malformedJSON) {
+    ///     // Use the repaired JSON: {"name": "John", "age": 30}
+    /// }
+    /// ```
+    ///
+    /// - Parameter jsonString: The potentially malformed JSON string
+    /// - Returns: A repaired JSON string, or nil if repair failed
+    public static func repairJSON(_ jsonString: String) -> String? {
+        return JSONExtractor.repairJSON(jsonString)
+    }
+}
+
+// MARK: - Advanced MLX Access
+
+extension FoundryModelSession {
+    
+    /// Provides access to the underlying MLX model context for advanced operations.
+    ///
+    /// This method returns the MLX model context if the session is using an MLX backend.
+    /// Use this for direct access to MLX features not exposed through the standard API.
+    ///
+    /// Example usage:
+    /// ```swift
+    /// let session = FoundryModelSession(model: .mlx(.qwen2_5_3B_4bit))
+    /// if let mlxContext = await session.getMLXModelContext() {
+    ///     // Use mlxContext for advanced operations
+    ///     let tokenizer = mlxContext.tokenizer
+    ///     let model = mlxContext.model
+    /// }
+    /// ```
+    ///
+    /// - Returns: The MLX ModelContext if using MLX backend, nil otherwise
+    /// - Note: This is an advanced API. Most users should use the standard generation methods.
+    @available(iOS 16.0, macOS 13.0, *)
+    public func getMLXModelContext() async -> ModelContext? {
+        guard model.isMLX else { return nil }
+        
+        if let mlxBackend = backend as? MLXBackend {
+            return mlxBackend.getMLXModel()
+        }
+        
+        return nil
+    }
+    
+    /// Creates a guided generation session for structured JSON generation with MLX models.
+    ///
+    /// This method creates a session that enforces token-level constraints to ensure
+    /// the generated output conforms to a specific JSON schema.
+    ///
+    /// Example usage:
+    /// ```swift
+    /// let schema = RuntimeGenerationSchema(root: schemaNode, dependencies: [])
+    /// if let guidedSession = await session.createGuidedSession(schema: schema) {
+    ///     let result = try await guidedSession.generate(prompt: "Create a user")
+    /// }
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - schema: The generation schema to enforce
+    ///   - temperature: Temperature for sampling (default: 0.7)
+    ///   - topP: Top-p sampling parameter (default: 1.0)
+    /// - Returns: A GuidedGenerationSession if using MLX backend, nil otherwise
+    @available(iOS 16.0, macOS 13.0, *)
+    public func createGuidedSession(
+        schema: RuntimeGenerationSchema,
+        temperature: Float = 0.7,
+        topP: Float = 1.0
+    ) async -> GuidedGenerationSession? {
+        guard model.isMLX else { return nil }
+        
+        if let mlxBackend = backend as? MLXBackend {
+            return mlxBackend.createGuidedSession(
+                schema: schema,
+                temperature: temperature,
+                topP: topP
+            )
+        }
+        
+        return nil
     }
 }
 

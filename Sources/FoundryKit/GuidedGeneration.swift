@@ -11,7 +11,7 @@ public typealias GuidedGenerationSchema = RuntimeGenerationSchema
 // MARK: - MLX LogitProcessor Integration
 
 /// State container for thread-safe access
-private actor ProcessorState {
+public actor ProcessorState {
     var parseState: JSONParseState
     var validTokenCache: [String: Set<Int>] = [:]
     
@@ -276,7 +276,7 @@ public struct GuidedSampler: LogitSampler {
 // MARK: - JSON Parse State
 
 /// Tracks the current state of JSON parsing and determines valid next characters
-class JSONParseState {
+public class JSONParseState {
     indirect enum State {
         case start
         case inObject(path: [String])
@@ -537,12 +537,35 @@ extension MLXBackend {
     }
 }
 
-/// A generation session with guided constraints
+/// A generation session with guided constraints for structured JSON generation.
+///
+/// This session enforces token-level constraints to ensure the generated output
+/// conforms to a specific JSON schema. It's particularly useful for generating
+/// valid structured data with MLX models.
+///
+/// Example usage:
+/// ```swift
+/// let schema = RuntimeGenerationSchema(root: schemaNode, dependencies: [])
+/// let guidedSession = mlxBackend.createGuidedSession(schema: schema)
+/// let result = try await guidedSession.generate(prompt: "Create a user profile")
+/// ```
 public struct GuidedGenerationSession {
-    let model: ModelContext
-    let processor: SyncGuidedJSONProcessor
-    let sampler: GuidedSampler
+    /// The MLX model context used for generation
+    public let model: ModelContext
     
+    /// The processor that enforces JSON constraints
+    public let processor: SyncGuidedJSONProcessor
+    
+    /// The sampler used for token selection
+    public let sampler: GuidedSampler
+    
+    /// Generates text with guided constraints.
+    ///
+    /// - Parameters:
+    ///   - prompt: The input prompt to generate from
+    ///   - maxTokens: Maximum number of tokens to generate (default: 512)
+    /// - Returns: The generated JSON string that conforms to the schema
+    /// - Throws: An error if generation fails
     public func generate(prompt: String, maxTokens: Int = 512) async throws -> String {
         // Use MLX's generate function with our custom processor and sampler
         let input = try await model.processor.prepare(

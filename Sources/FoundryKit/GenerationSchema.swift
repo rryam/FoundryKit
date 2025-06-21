@@ -50,14 +50,14 @@ public struct RuntimeGenerationSchema: Sendable {
 
 /// Node representation for schema traversal
 public struct SchemaNode: Sendable {
-    let name: String
-    let type: SchemaType
-    let properties: [String: SchemaNode]
-    let required: Set<String>
-    let constraints: [Constraint]
+    public let name: String
+    public let type: SchemaType
+    public let properties: [String: SchemaNode]
+    public let required: Set<String>
+    public let constraints: [Constraint]
     
     /// Initialize from a Generable type using reflection
-    init<T: Generable>(from type: T.Type) {
+    public init<T: Generable>(from type: T.Type) {
         self.name = String(describing: type)
         
         // For now, use a basic implementation
@@ -69,7 +69,7 @@ public struct SchemaNode: Sendable {
     }
     
     /// Initialize from a dictionary representation
-    init(from dict: [String: Any], name: String) {
+    public init(from dict: [String: Any], name: String) {
         self.name = name
         
         // Similar parsing logic as above
@@ -124,7 +124,7 @@ public struct SchemaNode: Sendable {
     }
     
     /// Initialize from a DynamicGenerationSchema
-    init(from dynamic: DynamicGenerationSchema) throws {
+    public init(from dynamic: DynamicGenerationSchema) throws {
         self.name = dynamic.name
         
         switch dynamic.type {
@@ -232,7 +232,7 @@ public struct SchemaNode: Sendable {
     }
     
     /// Get valid properties at a given path
-    func getValidProperties(at path: [String]) -> Set<String> {
+    public func getValidProperties(at path: [String]) -> Set<String> {
         if path.isEmpty {
             return Set(properties.keys)
         }
@@ -246,7 +246,7 @@ public struct SchemaNode: Sendable {
     }
     
     /// Get schema type for a property
-    func getSchemaType(at path: [String], property: String) -> SchemaType? {
+    public func getSchemaType(at path: [String], property: String) -> SchemaType? {
         if path.isEmpty {
             return properties[property]?.type
         }

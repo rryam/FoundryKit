@@ -1,8 +1,28 @@
 import Foundation
 import FoundationModels
 
-/// Internal protocol for backend implementations.
-internal protocol FoundryBackend: Sendable {
+/// Protocol for backend implementations that provide language model capabilities.
+///
+/// Conforming types implement the underlying functionality for generating responses
+/// using different model backends (e.g., MLX or Foundation Models).
+///
+/// To create a custom backend:
+/// ```swift
+/// public class MyCustomBackend: FoundryBackend {
+///     public func prewarm() {
+///         // Preload model resources
+///     }
+///     
+///     public func respond(
+///         to prompt: String,
+///         options: FoundryGenerationOptions
+///     ) async throws -> BackendResponse<String> {
+///         // Generate response
+///     }
+///     // ... implement other required methods
+/// }
+/// ```
+public protocol FoundryBackend: Sendable {
     
     /// Preloads model resources if possible.
     func prewarm()
@@ -52,12 +72,23 @@ internal protocol FoundryBackend: Sendable {
     ) -> any AsyncSequence<Content.PartiallyGenerated, any Error> where Content: Generable & Sendable
 }
 
-/// Internal response type for backends.
-internal struct BackendResponse<Content: Sendable>: Sendable {
-    let content: Content
-    let transcriptEntries: ArraySlice<Transcript.Entry>
+/// Response type returned by backend implementations.
+///
+/// Contains the generated content along with transcript entries that record
+/// the conversation history.
+public struct BackendResponse<Content: Sendable>: Sendable {
+    /// The generated content.
+    public let content: Content
     
-    init(content: Content, transcriptEntries: ArraySlice<Transcript.Entry>) {
+    /// The transcript entries recording the conversation.
+    public let transcriptEntries: ArraySlice<Transcript.Entry>
+    
+    /// Creates a backend response.
+    ///
+    /// - Parameters:
+    ///   - content: The generated content
+    ///   - transcriptEntries: The transcript entries for this interaction
+    public init(content: Content, transcriptEntries: ArraySlice<Transcript.Entry>) {
         self.content = content
         self.transcriptEntries = transcriptEntries
     }

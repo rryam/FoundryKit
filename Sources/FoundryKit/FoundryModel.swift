@@ -61,7 +61,7 @@ public enum FoundryModel: Sendable, Equatable {
 
 extension FoundryModel {
     /// Returns true if this model uses MLX backend.
-    var isMLX: Bool {
+    public var isMLX: Bool {
         switch self {
         case .mlx:
             return true
@@ -71,7 +71,7 @@ extension FoundryModel {
     }
     
     /// Returns true if this model uses Foundation Models backend.
-    var isFoundation: Bool {
+    public var isFoundation: Bool {
         switch self {
         case .foundation:
             return true
@@ -81,7 +81,7 @@ extension FoundryModel {
     }
     
     /// Returns the model identifier string.
-    var identifier: String {
+    public var identifier: String {
         switch self {
         case .mlx(let source):
             switch source {
