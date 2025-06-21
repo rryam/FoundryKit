@@ -1,7 +1,5 @@
 import Foundation
 import FoundryKit
-import MLX
-import MLXLMCommon
 
 // Example showcasing true token-level guided generation with MLX
 

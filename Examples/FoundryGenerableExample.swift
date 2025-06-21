@@ -1,6 +1,5 @@
 import Foundation
 import FoundryKit
-import FoundationModels
 
 // MARK: - Example 1: Product Review with Validation
 

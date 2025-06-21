@@ -18,7 +18,15 @@
       "Bash(swift build:*)",
       "Bash(git cherry-pick:*)",
       "Bash(rg:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)",
+      "Bash(#!/bin/bash\n# Search for usage of types\necho \"=== SEARCHING FOR TYPE USAGE ===\"\n\n# Function to search for a type\nsearch_type() {\n    local type_name=\"$1\"\n    echo \"\"\n    echo \"Searching for: $type_name\"\n    # Search for the type usage (excluding its definition)\n    rg -c \"\\b$type_name\\b\" --type swift ./Sources ./Tests ./Examples 2>/dev/null | grep -v \":0$\" | sort\n}\n\n# Core types that are likely used\nsearch_type \"FoundryGenerationError\"\nsearch_type \"FoundryGenerationOptions\"\nsearch_type \"FoundryModel\"\nsearch_type \"FoundryModelSession\"\nsearch_type \"FoundryBackend\"\nsearch_type \"BackendResponse\")",
+      "Bash(#!/bin/bash\n# Search for more types\necho \"=== SEARCHING FOR MORE TYPE USAGE ===\"\n\nsearch_type() {\n    local type_name=\"$1\"\n    echo \"\"\n    echo \"Searching for: $type_name\"\n    rg -c \"\\b$type_name\\b\" --type swift ./Sources ./Tests ./Examples 2>/dev/null | grep -v \":0$\" | sort\n}\n\n# Types from StructuredGeneration.swift\nsearch_type \"StructuredOutput\"\nsearch_type \"StructuredGenerationConfig\"\nsearch_type \"FunctionSpec\"\nsearch_type \"FunctionCall\"\nsearch_type \"JSONExtractor\"\nsearch_type \"StructuredPromptBuilder\"\nsearch_type \"SchemaExtractor\")",
+      "Bash(python3:*)",
+      "Bash(chmod:*)",
+      "Bash(./find_unused_functions.sh)",
+      "Bash(#!/bin/bash\n# Search for schema types\necho \"=== SEARCHING FOR SCHEMA TYPE USAGE ===\"\n\nsearch_type() {\n    local type_name=\"$1\"\n    echo \"\"\n    echo \"Searching for: $type_name\"\n    rg -c \"\\b$type_name\\b\" --type swift ./Sources ./Tests ./Examples 2>/dev/null | grep -v \":0$\" | sort\n}\n\n# Types from GenerationSchema.swift\nsearch_type \"SchemaType\"\nsearch_type \"RuntimeGenerationSchema\"\nsearch_type \"SchemaNode\"\nsearch_type \"Constraint\"\nsearch_type \"DynamicGenerationSchema\")"
     ],
     "deny": [],
     "includeCoAuthoredBy": false

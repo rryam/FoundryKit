@@ -1,6 +1,5 @@
 import Foundation
 import MLXLMCommon
-import FoundationModels
 
 /// Represents different types of language models available in FoundryKit.
 public enum FoundryModel: Sendable, Equatable {
