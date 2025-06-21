@@ -49,7 +49,7 @@ public macro FoundryGenerable() = #externalMacro(
 /// let terms: [String]
 /// ```
 @attached(peer)
-public macro FoundryGuide(_ description: String, _ constraints: ValidationConstraint...) = #externalMacro(
+public macro FoundryGuide(_ description: String? = nil, _ constraints: ValidationConstraint...) = #externalMacro(
     module: "FoundryGenerableMacros",
     type: "FoundryGuideMacro"
 )
@@ -85,15 +85,9 @@ public enum ValidationConstraint: Sendable {
     case anyOf([String])
     
     /// Enforces that the string follows the pattern
-    case pattern(String)  // We use String instead of Regex for broader compatibility
+    case pattern(String)  // Note: FMF uses Regex type, we use String for compatibility
     
-    /// Enforces minimum string length
-    case minLength(Int)
-    
-    /// Enforces maximum string length  
-    case maxLength(Int)
-    
-    // MARK: - Numeric Constraints
+    // MARK: - Numeric Constraints (Int)
     
     /// Enforces a minimum value (inclusive)
     case minimum(Int)
@@ -103,6 +97,28 @@ public enum ValidationConstraint: Sendable {
     
     /// Enforces values fall within a range
     case range(ClosedRange<Int>)
+    
+    // MARK: - Numeric Constraints (Float)
+    
+    /// Enforces a minimum Float value (inclusive)
+    case minimumFloat(Float)
+    
+    /// Enforces a maximum Float value (inclusive)
+    case maximumFloat(Float)
+    
+    /// Enforces Float values fall within a range
+    case rangeFloat(ClosedRange<Float>)
+    
+    // MARK: - Numeric Constraints (Double)
+    
+    /// Enforces a minimum Double value (inclusive)
+    case minimumDouble(Double)
+    
+    /// Enforces a maximum Double value (inclusive)
+    case maximumDouble(Double)
+    
+    /// Enforces Double values fall within a range
+    case rangeDouble(ClosedRange<Double>)
     
     // MARK: - Array Constraints
     
@@ -116,6 +132,7 @@ public enum ValidationConstraint: Sendable {
     case count(Int)
     
     /// Enforces that the number of elements in the array fall within a closed range
+    /// Note: In FMF, this is handled by overloaded .count() method
     case countRange(ClosedRange<Int>)
     
 }
@@ -160,13 +177,29 @@ extension FoundryStructuredOutput {
                 if let intValue = value as? Int, !range.contains(intValue) {
                     throw ValidationError.outOfRange(name, range)
                 }
-            case .minLength(let minLen):
-                if let stringValue = value as? String, stringValue.count < minLen {
-                    throw ValidationError.tooShort(name, minLen)
+            case .minimumFloat(let minValue):
+                if let floatValue = value as? Float, floatValue < minValue {
+                    throw ValidationError.belowMinimumFloat(name, minValue)
                 }
-            case .maxLength(let maxLen):
-                if let stringValue = value as? String, stringValue.count > maxLen {
-                    throw ValidationError.tooLong(name, maxLen)
+            case .maximumFloat(let maxValue):
+                if let floatValue = value as? Float, floatValue > maxValue {
+                    throw ValidationError.aboveMaximumFloat(name, maxValue)
+                }
+            case .rangeFloat(let range):
+                if let floatValue = value as? Float, !range.contains(floatValue) {
+                    throw ValidationError.outOfRangeFloat(name, range)
+                }
+            case .minimumDouble(let minValue):
+                if let doubleValue = value as? Double, doubleValue < minValue {
+                    throw ValidationError.belowMinimumDouble(name, minValue)
+                }
+            case .maximumDouble(let maxValue):
+                if let doubleValue = value as? Double, doubleValue > maxValue {
+                    throw ValidationError.aboveMaximumDouble(name, maxValue)
+                }
+            case .rangeDouble(let range):
+                if let doubleValue = value as? Double, !range.contains(doubleValue) {
+                    throw ValidationError.outOfRangeDouble(name, range)
                 }
             case .minimumCount(let minCount):
                 if let arrayValue = value as? [Any], arrayValue.count < minCount {
@@ -209,8 +242,12 @@ public enum ValidationError: LocalizedError {
     case belowMinimum(String, Int)
     case aboveMaximum(String, Int)
     case outOfRange(String, ClosedRange<Int>)
-    case tooShort(String, Int)
-    case tooLong(String, Int)
+    case belowMinimumFloat(String, Float)
+    case aboveMaximumFloat(String, Float)
+    case outOfRangeFloat(String, ClosedRange<Float>)
+    case belowMinimumDouble(String, Double)
+    case aboveMaximumDouble(String, Double)
+    case outOfRangeDouble(String, ClosedRange<Double>)
     case tooFewItems(String, Int)
     case tooManyItems(String, Int)
     case wrongItemCount(String, Int, Int)
@@ -228,10 +265,18 @@ public enum ValidationError: LocalizedError {
             return "\(property) is above maximum value of \(max)"
         case .outOfRange(let property, let range):
             return "\(property) is outside the valid range \(range.lowerBound)...\(range.upperBound)"
-        case .tooShort(let property, let minLength):
-            return "\(property) is shorter than minimum length of \(minLength)"
-        case .tooLong(let property, let maxLength):
-            return "\(property) is longer than maximum length of \(maxLength)"
+        case .belowMinimumFloat(let property, let min):
+            return "\(property) is below minimum value of \(min)"
+        case .aboveMaximumFloat(let property, let max):
+            return "\(property) is above maximum value of \(max)"
+        case .outOfRangeFloat(let property, let range):
+            return "\(property) is outside the valid range \(range.lowerBound)...\(range.upperBound)"
+        case .belowMinimumDouble(let property, let min):
+            return "\(property) is below minimum value of \(min)"
+        case .aboveMaximumDouble(let property, let max):
+            return "\(property) is above maximum value of \(max)"
+        case .outOfRangeDouble(let property, let range):
+            return "\(property) is outside the valid range \(range.lowerBound)...\(range.upperBound)"
         case .tooFewItems(let property, let minItems):
             return "\(property) has fewer than \(minItems) items"
         case .tooManyItems(let property, let maxItems):

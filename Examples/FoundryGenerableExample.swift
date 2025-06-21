@@ -11,7 +11,7 @@ struct ProductReview {
     @FoundryGuide("Rating from 1 to 5", .range(1...5))
     let rating: Int
     
-    @FoundryGuide("Review text between 50-200 words", .minLength(50), .maxLength(200))
+    @FoundryGuide("Review text between 50-200 characters", .pattern("^.{50,200}$"))
     let reviewText: String
     
     @FoundryGuide("Would recommend this product")
@@ -57,7 +57,7 @@ struct APIConfiguration {
     @FoundryGuide("API endpoint URL", .pattern("^https?://.*"))
     let endpoint: String
     
-    @FoundryGuide("API key", .minLength(32), .maxLength(64))
+    @FoundryGuide("API key", .pattern("^.{32,64}$"))
     let apiKey: String
     
     @FoundryGuide("Request timeout in seconds", .range(1...300))

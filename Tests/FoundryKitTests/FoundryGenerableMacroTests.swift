@@ -4,7 +4,7 @@ import FoundationModels
 
 @FoundryGenerable
 struct TestModel {
-    @FoundryGuide("User name", .minLength(3), .maxLength(50))
+    @FoundryGuide("User name", .pattern("^.{3,50}$"))
     let name: String
     
     @FoundryGuide("User age", .range(0...150))
@@ -53,8 +53,7 @@ final class FoundryGenerableMacroTests: XCTestCase {
         // Test name validation
         let nameSchema = properties?["name"] as? [String: Any]
         XCTAssertEqual(nameSchema?["type"] as? String, "string")
-        XCTAssertEqual(nameSchema?["minLength"] as? Int, 3)
-        XCTAssertEqual(nameSchema?["maxLength"] as? Int, 50)
+        XCTAssertEqual(nameSchema?["pattern"] as? String, "^.{3,50}$")
         
         // Test age validation
         let ageSchema = properties?["age"] as? [String: Any]

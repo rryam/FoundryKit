@@ -16,23 +16,25 @@ public struct FoundryGuideMacro: PeerMacro {
             throw MacroError.invalidApplication("@FoundryGuide can only be applied to properties")
         }
         
-        // Validate that arguments are provided
+        // Validate that arguments are provided (description is optional)
         guard let arguments = node.arguments,
-              let labeledExprList = arguments.as(LabeledExprListSyntax.self),
-              !labeledExprList.isEmpty else {
-            throw MacroError.missingArgument("@FoundryGuide requires at least a description argument")
+              let labeledExprList = arguments.as(LabeledExprListSyntax.self) else {
+            // No arguments is valid - description is optional
+            return []
         }
         
-        // First argument must be a description string
-        guard let firstArg = labeledExprList.first,
-              firstArg.expression.is(StringLiteralExprSyntax.self) else {
-            throw MacroError.invalidArgument("First argument to @FoundryGuide must be a string description")
+        // If arguments exist, check if first is a description string or a constraint
+        var startIndex = 0
+        if let firstArg = labeledExprList.first {
+            // Check if it's a string literal (description) or a constraint
+            if firstArg.expression.is(StringLiteralExprSyntax.self) {
+                startIndex = 1  // Skip description when validating constraints
+            }
         }
         
         // Validate constraint arguments (if any)
-        if labeledExprList.count > 1 {
-            for (index, arg) in labeledExprList.enumerated() {
-                if index == 0 { continue } // Skip description
+        for (index, arg) in labeledExprList.enumerated() {
+            if index < startIndex { continue } // Skip description if present
                 
                 // Validate constraint syntax
                 let constraintName: String
@@ -49,15 +51,16 @@ public struct FoundryGuideMacro: PeerMacro {
                 }
                 
                 let validConstraints = [
-                    "constant", "anyOf", "pattern", "minLength", "maxLength",
-                    "minimum", "maximum", "range", 
+                    "constant", "anyOf", "pattern",
+                    "minimum", "maximum", "range",
+                    "minimumFloat", "maximumFloat", "rangeFloat",
+                    "minimumDouble", "maximumDouble", "rangeDouble",
                     "minimumCount", "maximumCount", "count", "countRange"
                 ]
                 
                 if !validConstraints.contains(constraintName) {
                     throw MacroError.invalidArgument("Unknown constraint: '.\(constraintName)'. Valid constraints are: \(validConstraints.joined(separator: ", "))")
                 }
-            }
         }
         
         // This is a marker macro - actual code generation happens in FoundryGenerableMacro

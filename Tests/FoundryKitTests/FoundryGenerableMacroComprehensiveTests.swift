@@ -8,7 +8,7 @@ struct ComprehensiveTestModel {
     @FoundryGuide("User's unique identifier")
     let userId: String
     
-    @FoundryGuide("Full name of the user", .minLength(2), .maxLength(100))
+    @FoundryGuide("Full name of the user", .pattern("^.{2,100}$"))
     let name: String
     
     @FoundryGuide("User's age in years", .range(0...150))
@@ -29,7 +29,7 @@ struct ComprehensiveTestModel {
     @FoundryGuide("Phone numbers")
     let phoneNumbers: [String]?
     
-    @FoundryGuide("Biography text", .maxLength(500))
+    @FoundryGuide("Biography text", .pattern("^.{0,500}$"))
     let bio: String?
     
     @FoundryGuide("Preferred contact method", .anyOf(["email", "phone", "sms"]))
@@ -122,8 +122,7 @@ final class FoundryGenerableMacroComprehensiveTests: XCTestCase {
         // Test string validation
         let nameProp = properties?["name"] as? [String: Any]
         XCTAssertEqual(nameProp?["type"] as? String, "string")
-        XCTAssertEqual(nameProp?["minLength"] as? Int, 2)
-        XCTAssertEqual(nameProp?["maxLength"] as? Int, 100)
+        XCTAssertEqual(nameProp?["pattern"] as? String, "^.{2,100}$")
         
         // Test integer validation
         let ageProp = properties?["age"] as? [String: Any]
@@ -206,8 +205,7 @@ final class FoundryGenerableMacroComprehensiveTests: XCTestCase {
         
         // Verify validation constraints are preserved
         let nameProp = properties?["name"] as? [String: Any]
-        XCTAssertEqual(nameProp?["minLength"] as? Int, 2)
-        XCTAssertEqual(nameProp?["maxLength"] as? Int, 100)
+        XCTAssertEqual(nameProp?["pattern"] as? String, "^.{2,100}$")
         
         let ageProp = properties?["age"] as? [String: Any]
         XCTAssertEqual(ageProp?["minimum"] as? Int, 0)

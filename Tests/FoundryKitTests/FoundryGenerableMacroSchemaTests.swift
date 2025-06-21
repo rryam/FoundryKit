@@ -4,7 +4,7 @@ import FoundationModels
 
 @FoundryGenerable
 struct DetailedTestModel {
-    @FoundryGuide("User's full name", .minLength(2), .maxLength(100))
+    @FoundryGuide("User's full name", .pattern("^.{2,100}$"))
     let name: String
     
     @FoundryGuide("User's age in years", .range(18...120))
@@ -49,8 +49,7 @@ final class FoundryGenerableMacroSchemaTests: XCTestCase {
         let nameSchema = properties?["name"] as? [String: Any]
         XCTAssertEqual(nameSchema?["type"] as? String, "string")
         XCTAssertEqual(nameSchema?["description"] as? String, "User's full name")
-        XCTAssertEqual(nameSchema?["minLength"] as? Int, 2)
-        XCTAssertEqual(nameSchema?["maxLength"] as? Int, 100)
+        XCTAssertEqual(nameSchema?["pattern"] as? String, "^.{2,100}$")
         
         // Verify age property with validation
         let ageSchema = properties?["age"] as? [String: Any]
@@ -160,8 +159,7 @@ final class FoundryGenerableMacroSchemaTests: XCTestCase {
         let nameProp = properties?["name"] as? [String: Any]
         XCTAssertEqual(nameProp?["type"] as? String, "string")
         XCTAssertEqual(nameProp?["description"] as? String, "User's full name")
-        XCTAssertEqual(nameProp?["minLength"] as? Int, 2)
-        XCTAssertEqual(nameProp?["maxLength"] as? Int, 100)
+        XCTAssertEqual(nameProp?["pattern"] as? String, "^.{2,100}$")
         
         // Verify emails array property
         let emailsProp = properties?["emails"] as? [String: Any]

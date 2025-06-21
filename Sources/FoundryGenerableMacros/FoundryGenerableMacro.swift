@@ -150,8 +150,6 @@ private func extractGuideInfo(from attributes: AttributeListSyntax) -> (descript
             if args.count > 1 {
                 var min: Int? = nil
                 var max: Int? = nil
-                var minLength: Int? = nil
-                var maxLength: Int? = nil
                 var minItems: Int? = nil
                 var maxItems: Int? = nil
                 var pattern: String? = nil
@@ -179,14 +177,24 @@ private func extractGuideInfo(from attributes: AttributeListSyntax) -> (descript
                                 min = lower
                                 max = upper
                             }
-                        case "minLength":
-                            if let value = extractIntFromFunctionCall(funcCall) {
-                                minLength = value
-                            }
-                        case "maxLength":
-                            if let value = extractIntFromFunctionCall(funcCall) {
-                                maxLength = value
-                            }
+                        case "minimumFloat":
+                            // Handle Float constraints in schema generation
+                            break
+                        case "maximumFloat":
+                            // Handle Float constraints in schema generation
+                            break
+                        case "rangeFloat":
+                            // Handle Float range in schema generation
+                            break
+                        case "minimumDouble":
+                            // Handle Double constraints in schema generation
+                            break
+                        case "maximumDouble":
+                            // Handle Double constraints in schema generation
+                            break
+                        case "rangeDouble":
+                            // Handle Double range in schema generation
+                            break
                         case "minimumCount":
                             if let value = extractIntFromFunctionCall(funcCall) {
                                 minItems = value
@@ -228,7 +236,7 @@ private func extractGuideInfo(from attributes: AttributeListSyntax) -> (descript
                 
                 validation = ValidationInfo(
                     min: min, max: max,
-                    minLength: minLength, maxLength: maxLength,
+                    minLength: nil, maxLength: nil,
                     minItems: minItems, maxItems: maxItems,
                     pattern: pattern, enumValues: enumValues
                 )
@@ -407,8 +415,7 @@ private func generateJSONSchema(properties: [PropertyInfo]) throws -> VariableDe
         if let validation = property.validation {
             if let min = validation.min { propSchema["minimum"] = min }
             if let max = validation.max { propSchema["maximum"] = max }
-            if let minLength = validation.minLength { propSchema["minLength"] = minLength }
-            if let maxLength = validation.maxLength { propSchema["maxLength"] = maxLength }
+            // Note: FMF doesn't support minLength/maxLength for strings, only pattern validation
             if let minItems = validation.minItems { propSchema["minItems"] = minItems }
             if let maxItems = validation.maxItems { propSchema["maxItems"] = maxItems }
             if let pattern = validation.pattern { propSchema["pattern"] = pattern }
@@ -481,8 +488,7 @@ private func generateToolCallSchema(for structName: String, properties: [Propert
         if let validation = property.validation {
             if let min = validation.min { propSchema["minimum"] = min }
             if let max = validation.max { propSchema["maximum"] = max }
-            if let minLength = validation.minLength { propSchema["minLength"] = minLength }
-            if let maxLength = validation.maxLength { propSchema["maxLength"] = maxLength }
+            // Note: FMF doesn't support minLength/maxLength for strings, only pattern validation
             if let minItems = validation.minItems { propSchema["minItems"] = minItems }
             if let maxItems = validation.maxItems { propSchema["maxItems"] = maxItems }
             if let pattern = validation.pattern { propSchema["pattern"] = pattern }

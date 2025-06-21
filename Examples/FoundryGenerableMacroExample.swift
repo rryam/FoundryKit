@@ -8,24 +8,19 @@ struct WeatherReport {
     @FoundryGuide("City or location name")
     let location: String
     
-    @FoundryGuide("Current temperature value")
-    @FoundryValidation(min: -50, max: 60)
+    @FoundryGuide("Current temperature value", .rangeDouble(-50...60))
     let temperature: Double
     
-    @FoundryGuide("Temperature unit (celsius or fahrenheit)")
-    @FoundryValidation(enumValues: ["celsius", "fahrenheit"])
+    @FoundryGuide("Temperature unit (celsius or fahrenheit)", .anyOf(["celsius", "fahrenheit"]))
     let unit: String
     
-    @FoundryGuide("Weather conditions description")
-    @FoundryValidation(minLength: 3, maxLength: 50)
+    @FoundryGuide("Weather conditions description", .pattern("^.{3,50}$"))
     let conditions: String
     
-    @FoundryGuide("Humidity percentage")
-    @FoundryValidation(min: 0, max: 100)
+    @FoundryGuide("Humidity percentage", .range(0...100))
     let humidity: Int?
     
-    @FoundryGuide("Wind speed in km/h")
-    @FoundryValidation(min: 0, max: 200)
+    @FoundryGuide("Wind speed in km/h", .rangeDouble(0...200))
     let windSpeed: Double?
 }
 
@@ -33,20 +28,16 @@ struct WeatherReport {
 
 @FoundryGenerable
 struct UserProfile {
-    @FoundryGuide("User's full name")
-    @FoundryValidation(minLength: 2, maxLength: 100)
+    @FoundryGuide("User's full name", .pattern("^.{2,100}$"))
     let name: String
     
-    @FoundryGuide("User's email address")
-    @FoundryValidation(pattern: "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
+    @FoundryGuide("User's email address", .pattern("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"))
     let email: String
     
-    @FoundryGuide("User's age in years")
-    @FoundryValidation(min: 13, max: 120)
+    @FoundryGuide("User's age in years", .range(13...120))
     let age: Int
     
-    @FoundryGuide("User's role in the system")
-    @FoundryValidation(enumValues: ["admin", "user", "guest", "moderator"])
+    @FoundryGuide("User's role in the system", .anyOf(["admin", "user", "guest", "moderator"]))
     let role: String
     
     @FoundryGuide("User's bio or description")

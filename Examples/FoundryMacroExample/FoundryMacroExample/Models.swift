@@ -4,10 +4,10 @@ import FoundationModels
 
 @FoundryGenerable
 struct Product {
-    @FoundryGuide("Product name", .minLength(3), .maxLength(200))
+    @FoundryGuide("Product name", .pattern("^.{3,200}$"))
     let name: String
     
-    @FoundryGuide("Product description", .maxLength(1000))
+    @FoundryGuide("Product description", .pattern("^.{0,1000}$"))
     let description: String
     
     @FoundryGuide("Price in USD", .minimum(0), .maximum(999999))
@@ -41,13 +41,13 @@ struct UserProfile {
     @FoundryGuide("User's unique identifier")
     let userId: String
     
-    @FoundryGuide("Username for login", .minLength(3), .maxLength(30), .pattern("^[a-zA-Z0-9_]+$"))
+    @FoundryGuide("Username for login", .pattern("^[a-zA-Z0-9_]{3,30}$"))
     let username: String
     
     @FoundryGuide("User's email address", .pattern("^[\\w\\.-]+@[\\w\\.-]+\\.\\w+$"))
     let email: String
     
-    @FoundryGuide("User's full name", .minLength(2), .maxLength(100))
+    @FoundryGuide("User's full name", .pattern("^.{2,100}$"))
     let fullName: String
     
     @FoundryGuide("User's age", .range(13...120))
@@ -62,7 +62,7 @@ struct UserProfile {
     @FoundryGuide("Is email verified")
     let isEmailVerified: Bool
     
-    @FoundryGuide("User's bio", .maxLength(500))
+    @FoundryGuide("User's bio", .pattern("^.{0,500}$"))
     let bio: String?
     
     @FoundryGuide("Social media handles")
