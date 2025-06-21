@@ -4,12 +4,10 @@ import FoundationModels
 
 @FoundryGenerable
 struct TestModel {
-    @FoundryGuide("User name")
-    @FoundryValidation(minLength: 3, maxLength: 50)
+    @FoundryGuide("User name", .minLength(3), .maxLength(50))
     let name: String
     
-    @FoundryGuide("User age")
-    @FoundryValidation(min: 0, max: 150)
+    @FoundryGuide("User age", .range(0...150))
     let age: Int
     
     @FoundryGuide("User email")

@@ -4,20 +4,16 @@ import FoundationModels
 
 @FoundryGenerable
 struct DetailedTestModel {
-    @FoundryGuide("User's full name")
-    @FoundryValidation(minLength: 2, maxLength: 100)
+    @FoundryGuide("User's full name", .minLength(2), .maxLength(100))
     let name: String
     
-    @FoundryGuide("User's age in years")
-    @FoundryValidation(min: 18, max: 120)
+    @FoundryGuide("User's age in years", .range(18...120))
     let age: Int
     
-    @FoundryGuide("User's account status")
-    @FoundryValidation(enumValues: ["active", "inactive", "suspended"])
+    @FoundryGuide("User's account status", .anyOf(["active", "inactive", "suspended"]))
     let status: String
     
-    @FoundryGuide("User's email addresses")
-    @FoundryValidation(minItems: 1, maxItems: 5)
+    @FoundryGuide("User's email addresses", .minimumCount(1), .maximumCount(5))
     let emails: [String]
     
     @FoundryGuide("Optional bio")

@@ -14,8 +14,7 @@ struct Recipe {
     @FoundryGuide("Step by step cooking instructions")
     let steps: [String]
     
-    @FoundryGuide("Cooking time in minutes")
-    @FoundryValidation(min: 1, max: 300)
+    @FoundryGuide("Cooking time in minutes", .range(1...300))
     let cookingTime: Int
 }
 

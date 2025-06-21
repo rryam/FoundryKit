@@ -8,42 +8,34 @@ struct ComprehensiveTestModel {
     @FoundryGuide("User's unique identifier")
     let userId: String
     
-    @FoundryGuide("Full name of the user")
-    @FoundryValidation(minLength: 2, maxLength: 100)
+    @FoundryGuide("Full name of the user", .minLength(2), .maxLength(100))
     let name: String
     
-    @FoundryGuide("User's age in years")
-    @FoundryValidation(min: 0, max: 150)
+    @FoundryGuide("User's age in years", .range(0...150))
     let age: Int
     
-    @FoundryGuide("Account balance")
-    @FoundryValidation(min: -1000000, max: 1000000)
+    @FoundryGuide("Account balance", .minimum(-1000000), .maximum(1000000))
     let balance: Double
     
     @FoundryGuide("Is the account active")
     let isActive: Bool
     
-    @FoundryGuide("User's role in the system")
-    @FoundryValidation(enumValues: ["admin", "user", "guest"])
+    @FoundryGuide("User's role in the system", .anyOf(["admin", "user", "guest"]))
     let role: String
     
-    @FoundryGuide("Email addresses")
-    @FoundryValidation(minItems: 1, maxItems: 5)
+    @FoundryGuide("Email addresses", .minimumCount(1), .maximumCount(5))
     let emails: [String]
     
     @FoundryGuide("Phone numbers")
     let phoneNumbers: [String]?
     
-    @FoundryGuide("Biography text")
-    @FoundryValidation(maxLength: 500)
+    @FoundryGuide("Biography text", .maxLength(500))
     let bio: String?
     
-    @FoundryGuide("Preferred contact method")
-    @FoundryValidation(enumValues: ["email", "phone", "sms"])
+    @FoundryGuide("Preferred contact method", .anyOf(["email", "phone", "sms"]))
     let preferredContact: String?
     
-    @FoundryGuide("Account creation timestamp")
-    @FoundryValidation(pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$")
+    @FoundryGuide("Account creation timestamp", .pattern("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"))
     let createdAt: String
 }
 

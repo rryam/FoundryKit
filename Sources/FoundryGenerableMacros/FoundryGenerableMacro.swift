@@ -116,11 +116,8 @@ private func extractProperties(from members: MemberBlockItemListSyntax) throws -
         let propertyType = typeAnnotation.type.description.trimmingCharacters(in: .whitespacesAndNewlines)
         let isOptional = propertyType.hasSuffix("?")
         
-        // Extract @FoundryGuide description
-        let description = extractGuideDescription(from: varDecl.attributes)
-        
-        // Extract @FoundryValidation rules
-        let validation = extractValidation(from: varDecl.attributes)
+        // Extract @FoundryGuide description and constraints
+        let (description, validation) = extractGuideInfo(from: varDecl.attributes)
         
         properties.append(PropertyInfo(
             name: propertyName,
@@ -134,17 +131,116 @@ private func extractProperties(from members: MemberBlockItemListSyntax) throws -
     return properties
 }
 
-private func extractGuideDescription(from attributes: AttributeListSyntax) -> String? {
+private func extractGuideInfo(from attributes: AttributeListSyntax) -> (description: String?, validation: ValidationInfo?) {
     for attribute in attributes {
         if let attr = attribute.as(AttributeSyntax.self),
            attr.attributeName.description.contains("FoundryGuide"),
            let args = attr.arguments?.as(LabeledExprListSyntax.self),
-           let firstArg = args.first,
-           let stringLiteral = firstArg.expression.as(StringLiteralExprSyntax.self) {
-            return stringLiteral.segments.description.trimmingCharacters(in: CharacterSet(charactersIn: "\""))
+           !args.isEmpty {
+            
+            // Extract description from first argument
+            var description: String? = nil
+            if let firstArg = args.first,
+               let stringLiteral = firstArg.expression.as(StringLiteralExprSyntax.self) {
+                description = stringLiteral.segments.description.trimmingCharacters(in: CharacterSet(charactersIn: "\""))
+            }
+            
+            // Extract validation constraints from remaining arguments
+            var validation: ValidationInfo? = nil
+            if args.count > 1 {
+                var min: Int? = nil
+                var max: Int? = nil
+                var minLength: Int? = nil
+                var maxLength: Int? = nil
+                var minItems: Int? = nil
+                var maxItems: Int? = nil
+                var pattern: String? = nil
+                var enumValues: [String]? = nil
+                
+                for (index, arg) in args.enumerated() {
+                    if index == 0 { continue } // Skip description
+                    
+                    // Handle function call expressions like .range(1...10)
+                    if let funcCall = arg.expression.as(FunctionCallExprSyntax.self),
+                       let memberAccess = funcCall.calledExpression.as(MemberAccessExprSyntax.self) {
+                        let constraintName = memberAccess.declName.baseName.text
+                        
+                        switch constraintName {
+                        case "minimum":
+                            if let value = extractIntFromFunctionCall(funcCall) {
+                                min = value
+                            }
+                        case "maximum":
+                            if let value = extractIntFromFunctionCall(funcCall) {
+                                max = value
+                            }
+                        case "range":
+                            if let (lower, upper) = extractRangeFromFunctionCall(funcCall) {
+                                min = lower
+                                max = upper
+                            }
+                        case "minLength":
+                            if let value = extractIntFromFunctionCall(funcCall) {
+                                minLength = value
+                            }
+                        case "maxLength":
+                            if let value = extractIntFromFunctionCall(funcCall) {
+                                maxLength = value
+                            }
+                        case "minimumCount":
+                            if let value = extractIntFromFunctionCall(funcCall) {
+                                minItems = value
+                            }
+                        case "maximumCount":
+                            if let value = extractIntFromFunctionCall(funcCall) {
+                                maxItems = value
+                            }
+                        case "count":
+                            if let value = extractIntFromFunctionCall(funcCall) {
+                                minItems = value
+                                maxItems = value
+                            }
+                        case "countRange":
+                            if let (lower, upper) = extractRangeFromFunctionCall(funcCall) {
+                                minItems = lower
+                                maxItems = upper
+                            }
+                        case "pattern":
+                            if let value = extractStringFromFunctionCall(funcCall) {
+                                pattern = value
+                            }
+                        case "anyOf":
+                            if let values = extractStringArrayFromFunctionCall(funcCall) {
+                                enumValues = values
+                            }
+                        case "constant":
+                            if let value = extractStringFromFunctionCall(funcCall) {
+                                enumValues = [value]
+                            }
+                        default:
+                            break
+                        }
+                    } else if arg.expression.is(MemberAccessExprSyntax.self) {
+                        // Handle simple member access without function call (if needed in future)
+                        // For now, this would be an error case handled by validation
+                    }
+                }
+                
+                validation = ValidationInfo(
+                    min: min, max: max,
+                    minLength: minLength, maxLength: maxLength,
+                    minItems: minItems, maxItems: maxItems,
+                    pattern: pattern, enumValues: enumValues
+                )
+            }
+            
+            return (description, validation)
         }
     }
-    return nil
+    
+    // Also check for legacy @FoundryValidation if no @FoundryGuide constraints found
+    let validation = extractValidation(from: attributes)
+    return (nil, validation)
 }
 
 private func extractValidation(from attributes: AttributeListSyntax) -> ValidationInfo? {
@@ -535,6 +631,37 @@ private func extractEnumValues(from expr: ExprSyntax) -> [String]? {
             extractStringValue(from: element.expression)
         }
     }
+    return nil
+}
+
+private func extractIntFromFunctionCall(_ funcCall: FunctionCallExprSyntax) -> Int? {
+    guard let firstArg = funcCall.arguments.first else { return nil }
+    return extractIntValue(from: firstArg.expression)
+}
+
+private func extractStringFromFunctionCall(_ funcCall: FunctionCallExprSyntax) -> String? {
+    guard let firstArg = funcCall.arguments.first else { return nil }
+    return extractStringValue(from: firstArg.expression)
+}
+
+private func extractStringArrayFromFunctionCall(_ funcCall: FunctionCallExprSyntax) -> [String]? {
+    guard let firstArg = funcCall.arguments.first else { return nil }
+    return extractEnumValues(from: firstArg.expression)
+}
+
+private func extractRangeFromFunctionCall(_ funcCall: FunctionCallExprSyntax) -> (Int, Int)? {
+    guard let firstArg = funcCall.arguments.first else { return nil }
+    
+    // Handle range literal syntax like 1...10
+    if let rangeExpr = firstArg.expression.as(SequenceExprSyntax.self),
+       rangeExpr.elements.count == 3,
+       let lowerBound = rangeExpr.elements.first?.as(IntegerLiteralExprSyntax.self),
+       let upperBound = rangeExpr.elements.last?.as(IntegerLiteralExprSyntax.self),
+       let lower = Int(lowerBound.literal.text),
+       let upper = Int(upperBound.literal.text) {
+        return (lower, upper)
+    }
+    
     return nil
 }
 

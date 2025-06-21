@@ -5,7 +5,6 @@ import SwiftSyntaxMacros
 struct FoundryGenerablePlugin: CompilerPlugin {
     let providingMacros: [Macro.Type] = [
         FoundryGenerableMacro.self,
-        FoundryGuideMacro.self,
-        FoundryValidationMacro.self
+        FoundryGuideMacro.self
     ]
 }

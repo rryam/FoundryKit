@@ -8,19 +8,16 @@ struct ProductReview {
     @FoundryGuide("Product name")
     let productName: String
     
-    @FoundryGuide("Rating from 1 to 5")
-    @FoundryValidation(min: 1, max: 5)
+    @FoundryGuide("Rating from 1 to 5", .range(1...5))
     let rating: Int
     
-    @FoundryGuide("Review text between 50-200 words")
-    @FoundryValidation(minLength: 50, maxLength: 200)
+    @FoundryGuide("Review text between 50-200 words", .minLength(50), .maxLength(200))
     let reviewText: String
     
     @FoundryGuide("Would recommend this product")
     let recommendation: Bool
     
-    @FoundryGuide("Key pros of the product")
-    @FoundryValidation(minItems: 1, maxItems: 5)
+    @FoundryGuide("Key pros of the product", .minimumCount(1), .maximumCount(5))
     let pros: [String]
     
     @FoundryGuide("Key cons of the product")
@@ -31,24 +28,19 @@ struct ProductReview {
 
 @FoundryGenerable
 struct UserRegistration {
-    @FoundryGuide("Username (alphanumeric, 3-20 characters)")
-    @FoundryValidation(pattern: "^[a-zA-Z0-9]{3,20}$")
+    @FoundryGuide("Username (alphanumeric, 3-20 characters)", .pattern("^[a-zA-Z0-9]{3,20}$"))
     let username: String
     
-    @FoundryGuide("Email address")
-    @FoundryValidation(pattern: "^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$")
+    @FoundryGuide("Email address", .pattern("^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$"))
     let email: String
     
-    @FoundryGuide("Age (must be 18 or older)")
-    @FoundryValidation(min: 18, max: 120)
+    @FoundryGuide("Age (must be 18 or older)", .range(18...120))
     let age: Int
     
-    @FoundryGuide("Country code")
-    @FoundryValidation(enumValues: ["US", "CA", "UK", "DE", "FR", "JP", "AU"])
+    @FoundryGuide("Country code", .anyOf(["US", "CA", "UK", "DE", "FR", "JP", "AU"]))
     let country: String
     
-    @FoundryGuide("Preferred language")
-    @FoundryValidation(enumValues: ["en", "es", "fr", "de", "ja", "zh"])
+    @FoundryGuide("Preferred language", .anyOf(["en", "es", "fr", "de", "ja", "zh"]))
     let language: String
     
     @FoundryGuide("Accept terms and conditions")
@@ -62,20 +54,16 @@ struct UserRegistration {
 
 @FoundryGenerable
 struct APIConfiguration {
-    @FoundryGuide("API endpoint URL")
-    @FoundryValidation(pattern: "^https?://.*")
+    @FoundryGuide("API endpoint URL", .pattern("^https?://.*"))
     let endpoint: String
     
-    @FoundryGuide("API key")
-    @FoundryValidation(minLength: 32, maxLength: 64)
+    @FoundryGuide("API key", .minLength(32), .maxLength(64))
     let apiKey: String
     
-    @FoundryGuide("Request timeout in seconds")
-    @FoundryValidation(min: 1, max: 300)
+    @FoundryGuide("Request timeout in seconds", .range(1...300))
     let timeout: Int
     
-    @FoundryGuide("Maximum retry attempts")
-    @FoundryValidation(min: 0, max: 10)
+    @FoundryGuide("Maximum retry attempts", .range(0...10))
     let maxRetries: Int
     
     @FoundryGuide("Enable debug logging")
@@ -95,15 +83,13 @@ struct Order {
     @FoundryGuide("Customer information")
     let customer: Customer
     
-    @FoundryGuide("Order items")
-    @FoundryValidation(minItems: 1)
+    @FoundryGuide("Order items", .minimumCount(1))
     let items: [OrderItem]
     
     @FoundryGuide("Shipping address")
     let shippingAddress: Address
     
-    @FoundryGuide("Order total in cents")
-    @FoundryValidation(min: 0)
+    @FoundryGuide("Order total in cents", .minimum(0))
     let totalAmount: Int
     
     @FoundryGenerable
@@ -126,12 +112,10 @@ struct Order {
         @FoundryGuide("Product name")
         let name: String
         
-        @FoundryGuide("Quantity")
-        @FoundryValidation(min: 1)
+        @FoundryGuide("Quantity", .minimum(1))
         let quantity: Int
         
-        @FoundryGuide("Price per unit in cents")
-        @FoundryValidation(min: 0)
+        @FoundryGuide("Price per unit in cents", .minimum(0))
         let unitPrice: Int
     }
     
@@ -149,8 +133,7 @@ struct Order {
         @FoundryGuide("Postal code")
         let postalCode: String
         
-        @FoundryGuide("Country code")
-        @FoundryValidation(enumValues: ["US", "CA", "UK", "DE", "FR", "JP", "AU"])
+        @FoundryGuide("Country code", .anyOf(["US", "CA", "UK", "DE", "FR", "JP", "AU"]))
         let country: String
     }
 }

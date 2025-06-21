@@ -17,12 +17,14 @@ import Foundation
 ///     @FoundryGuide("City name")
 ///     let location: String
 ///     
-///     @FoundryGuide("Temperature in Celsius")
-///     @FoundryValidation(min: -50, max: 50)
-///     let temperature: Double
+///     @FoundryGuide("Temperature in Celsius", .range(-50...50))
+///     let temperature: Int
 ///     
-///     @FoundryGuide("Weather conditions")
+///     @FoundryGuide("Weather conditions", .anyOf(["sunny", "cloudy", "rainy", "snowy"]))
 ///     let conditions: String
+///     
+///     @FoundryGuide("Hourly forecast", .count(24))
+///     let hourlyTemperatures: [Int]
 /// }
 /// ```
 @attached(member, names: named(generationSchema), named(generatedContent), named(PartiallyGenerated), named(jsonSchema), named(toolCallSchema), named(exampleJSON))
@@ -32,56 +34,26 @@ public macro FoundryGenerable() = #externalMacro(
     type: "FoundryGenerableMacro"
 )
 
-/// Adds a description to a property for structured generation guidance.
+/// Adds a description and optional validation constraints to a property for structured generation.
+/// This matches the Foundation Models Framework's @Guide pattern.
 ///
 /// Example:
 /// ```swift
 /// @FoundryGuide("User's email address")
 /// let email: String
+/// 
+/// @FoundryGuide("User's age", .range(18...100))
+/// let age: Int
+/// 
+/// @FoundryGuide("Search terms", .count(5))
+/// let terms: [String]
 /// ```
 @attached(peer)
-public macro FoundryGuide(_ description: String) = #externalMacro(
+public macro FoundryGuide(_ description: String, _ constraints: ValidationConstraint...) = #externalMacro(
     module: "FoundryGenerableMacros",
     type: "FoundryGuideMacro"
 )
 
-/// Adds validation rules to a property for structured generation.
-///
-/// Available validation parameters:
-/// - `min`: Minimum value for numeric types
-/// - `max`: Maximum value for numeric types
-/// - `minLength`: Minimum length for strings
-/// - `maxLength`: Maximum length for strings
-/// - `minItems`: Minimum items for arrays
-/// - `maxItems`: Maximum items for arrays
-/// - `pattern`: Regex pattern for strings
-/// - `enumValues`: Allowed values
-///
-/// Example:
-/// ```swift
-/// @FoundryValidation(min: 1, max: 5)
-/// let rating: Int
-///
-/// @FoundryValidation(minLength: 10, maxLength: 200)
-/// let description: String
-///
-/// @FoundryValidation(enumValues: ["small", "medium", "large"])
-/// let size: String
-/// ```
-@attached(peer)
-public macro FoundryValidation(
-    min: Int? = nil,
-    max: Int? = nil,
-    minLength: Int? = nil,
-    maxLength: Int? = nil,
-    minItems: Int? = nil,
-    maxItems: Int? = nil,
-    pattern: String? = nil,
-    enumValues: [String]? = nil
-) = #externalMacro(
-    module: "FoundryGenerableMacros",
-    type: "FoundryValidationMacro"
-)
 
 // MARK: - Supporting Types
 
@@ -102,17 +74,50 @@ public struct ValidationRule {
     }
 }
 
-/// Types of validation constraints
-public enum ValidationConstraint {
-    case min(Int)
-    case max(Int)
+/// Type-safe validation constraints for guided generation, matching Foundation Models Framework patterns
+public enum ValidationConstraint: Sendable {
+    // MARK: - String Constraints
+    
+    /// Enforces that the string be precisely the given value
+    case constant(String)
+    
+    /// Enforces that the string be one of the provided values
+    case anyOf([String])
+    
+    /// Enforces that the string follows the pattern
+    case pattern(String)  // We use String instead of Regex for broader compatibility
+    
+    /// Enforces minimum string length
     case minLength(Int)
+    
+    /// Enforces maximum string length  
     case maxLength(Int)
-    case minItems(Int)
-    case maxItems(Int)
-    case pattern(String)
-    case enumValues([String])
-    case custom((Any) -> Bool)
+    
+    // MARK: - Numeric Constraints
+    
+    /// Enforces a minimum value (inclusive)
+    case minimum(Int)
+    
+    /// Enforces a maximum value (inclusive)
+    case maximum(Int)
+    
+    /// Enforces values fall within a range
+    case range(ClosedRange<Int>)
+    
+    // MARK: - Array Constraints
+    
+    /// Enforces a minimum number of elements in the array (inclusive)
+    case minimumCount(Int)
+    
+    /// Enforces a maximum number of elements in the array (inclusive)
+    case maximumCount(Int)
+    
+    /// Enforces that the array has exactly a certain number of elements
+    case count(Int)
+    
+    /// Enforces that the number of elements in the array fall within a closed range
+    case countRange(ClosedRange<Int>)
+    
 }
 
 // MARK: - Validation Extensions
@@ -143,13 +148,17 @@ extension FoundryStructuredOutput {
     ) throws {
         for constraint in constraints {
             switch constraint {
-            case .min(let minValue):
+            case .minimum(let minValue):
                 if let intValue = value as? Int, intValue < minValue {
                     throw ValidationError.belowMinimum(name, minValue)
                 }
-            case .max(let maxValue):
+            case .maximum(let maxValue):
                 if let intValue = value as? Int, intValue > maxValue {
                     throw ValidationError.aboveMaximum(name, maxValue)
+                }
+            case .range(let range):
+                if let intValue = value as? Int, !range.contains(intValue) {
+                    throw ValidationError.outOfRange(name, range)
                 }
             case .minLength(let minLen):
                 if let stringValue = value as? String, stringValue.count < minLen {
@@ -159,13 +168,21 @@ extension FoundryStructuredOutput {
                 if let stringValue = value as? String, stringValue.count > maxLen {
                     throw ValidationError.tooLong(name, maxLen)
                 }
-            case .minItems(let minCount):
+            case .minimumCount(let minCount):
                 if let arrayValue = value as? [Any], arrayValue.count < minCount {
                     throw ValidationError.tooFewItems(name, minCount)
                 }
-            case .maxItems(let maxCount):
+            case .maximumCount(let maxCount):
                 if let arrayValue = value as? [Any], arrayValue.count > maxCount {
                     throw ValidationError.tooManyItems(name, maxCount)
+                }
+            case .count(let exactCount):
+                if let arrayValue = value as? [Any], arrayValue.count != exactCount {
+                    throw ValidationError.wrongItemCount(name, exactCount, arrayValue.count)
+                }
+            case .countRange(let range):
+                if let arrayValue = value as? [Any], !range.contains(arrayValue.count) {
+                    throw ValidationError.itemCountOutOfRange(name, range, arrayValue.count)
                 }
             case .pattern(let regex):
                 if let stringValue = value as? String {
@@ -174,13 +191,13 @@ extension FoundryStructuredOutput {
                         throw ValidationError.patternMismatch(name, regex)
                     }
                 }
-            case .enumValues(let allowed):
+            case .anyOf(let allowed):
                 if let stringValue = value as? String, !allowed.contains(stringValue) {
                     throw ValidationError.invalidEnumValue(name, stringValue, allowed)
                 }
-            case .custom(let validator):
-                if !validator(value) {
-                    throw ValidationError.customValidationFailed(name)
+            case .constant(let expected):
+                if let stringValue = value as? String, stringValue != expected {
+                    throw ValidationError.notEqualToConstant(name, expected, stringValue)
                 }
             }
         }
@@ -191,12 +208,16 @@ extension FoundryStructuredOutput {
 public enum ValidationError: LocalizedError {
     case belowMinimum(String, Int)
     case aboveMaximum(String, Int)
+    case outOfRange(String, ClosedRange<Int>)
     case tooShort(String, Int)
     case tooLong(String, Int)
     case tooFewItems(String, Int)
     case tooManyItems(String, Int)
+    case wrongItemCount(String, Int, Int)
+    case itemCountOutOfRange(String, ClosedRange<Int>, Int)
     case patternMismatch(String, String)
     case invalidEnumValue(String, String, [String])
+    case notEqualToConstant(String, String, String)
     case customValidationFailed(String)
     
     public var errorDescription: String? {
@@ -205,6 +226,8 @@ public enum ValidationError: LocalizedError {
             return "\(property) is below minimum value of \(min)"
         case .aboveMaximum(let property, let max):
             return "\(property) is above maximum value of \(max)"
+        case .outOfRange(let property, let range):
+            return "\(property) is outside the valid range \(range.lowerBound)...\(range.upperBound)"
         case .tooShort(let property, let minLength):
             return "\(property) is shorter than minimum length of \(minLength)"
         case .tooLong(let property, let maxLength):
@@ -213,10 +236,16 @@ public enum ValidationError: LocalizedError {
             return "\(property) has fewer than \(minItems) items"
         case .tooManyItems(let property, let maxItems):
             return "\(property) has more than \(maxItems) items"
+        case .wrongItemCount(let property, let expected, let actual):
+            return "\(property) has \(actual) items but expected exactly \(expected)"
+        case .itemCountOutOfRange(let property, let range, let actual):
+            return "\(property) has \(actual) items but expected \(range.lowerBound)...\(range.upperBound)"
         case .patternMismatch(let property, let pattern):
             return "\(property) does not match pattern: \(pattern)"
         case .invalidEnumValue(let property, let value, let allowed):
             return "\(property) value '\(value)' is not in allowed values: \(allowed.joined(separator: ", "))"
+        case .notEqualToConstant(let property, let expected, let actual):
+            return "\(property) value '\(actual)' does not match expected constant '\(expected)'"
         case .customValidationFailed(let property):
             return "\(property) failed custom validation"
         }
