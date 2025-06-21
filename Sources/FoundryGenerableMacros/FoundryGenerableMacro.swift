@@ -204,14 +204,13 @@ private func extractGuideInfo(from attributes: AttributeListSyntax) -> (descript
                                 maxItems = value
                             }
                         case "count":
-                            if let value = extractIntFromFunctionCall(funcCall) {
-                                minItems = value
-                                maxItems = value
-                            }
-                        case "countRange":
+                            // Check if it's a range or exact count
                             if let (lower, upper) = extractRangeFromFunctionCall(funcCall) {
                                 minItems = lower
                                 maxItems = upper
+                            } else if let value = extractIntFromFunctionCall(funcCall) {
+                                minItems = value
+                                maxItems = value
                             }
                         case "pattern":
                             if let value = extractStringFromFunctionCall(funcCall) {

@@ -45,8 +45,11 @@ public macro FoundryGenerable() = #externalMacro(
 /// @FoundryGuide("User's age", .range(18...100))
 /// let age: Int
 /// 
-/// @FoundryGuide("Search terms", .count(5))
+/// @FoundryGuide("Search terms", .count(5))  // Exact count
 /// let terms: [String]
+/// 
+/// @FoundryGuide("Tags", .count(1...10))  // Count range
+/// let tags: [String]
 /// ```
 @attached(peer)
 public macro FoundryGuide(_ description: String? = nil, _ constraints: ValidationConstraint...) = #externalMacro(
@@ -128,13 +131,29 @@ public enum ValidationConstraint: Sendable {
     /// Enforces a maximum number of elements in the array (inclusive)
     case maximumCount(Int)
     
-    /// Enforces that the array has exactly a certain number of elements
-    case count(Int)
+    /// Enforces that the array has exactly a certain number of elements or falls within a range
+    case count(CountConstraint)
     
-    /// Enforces that the number of elements in the array fall within a closed range
-    /// Note: In FMF, this is handled by overloaded .count() method
-    case countRange(ClosedRange<Int>)
+}
+
+/// Represents count constraints for arrays
+public enum CountConstraint: Sendable {
+    case exact(Int)
+    case range(ClosedRange<Int>)
+}
+
+// MARK: - Convenience Extensions
+
+extension ValidationConstraint {
+    /// Convenience method for exact count
+    public static func count(_ value: Int) -> ValidationConstraint {
+        return .count(.exact(value))
+    }
     
+    /// Convenience method for count range
+    public static func count(_ range: ClosedRange<Int>) -> ValidationConstraint {
+        return .count(.range(range))
+    }
 }
 
 // MARK: - Validation Extensions
@@ -209,13 +228,18 @@ extension FoundryStructuredOutput {
                 if let arrayValue = value as? [Any], arrayValue.count > maxCount {
                     throw ValidationError.tooManyItems(name, maxCount)
                 }
-            case .count(let exactCount):
-                if let arrayValue = value as? [Any], arrayValue.count != exactCount {
-                    throw ValidationError.wrongItemCount(name, exactCount, arrayValue.count)
-                }
-            case .countRange(let range):
-                if let arrayValue = value as? [Any], !range.contains(arrayValue.count) {
-                    throw ValidationError.itemCountOutOfRange(name, range, arrayValue.count)
+            case .count(let constraint):
+                if let arrayValue = value as? [Any] {
+                    switch constraint {
+                    case .exact(let exactCount):
+                        if arrayValue.count != exactCount {
+                            throw ValidationError.wrongItemCount(name, exactCount, arrayValue.count)
+                        }
+                    case .range(let range):
+                        if !range.contains(arrayValue.count) {
+                            throw ValidationError.itemCountOutOfRange(name, range, arrayValue.count)
+                        }
+                    }
                 }
             case .pattern(let regex):
                 if let stringValue = value as? String {

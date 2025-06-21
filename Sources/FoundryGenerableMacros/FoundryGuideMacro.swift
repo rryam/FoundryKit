@@ -55,7 +55,7 @@ public struct FoundryGuideMacro: PeerMacro {
                     "minimum", "maximum", "range",
                     "minimumFloat", "maximumFloat", "rangeFloat",
                     "minimumDouble", "maximumDouble", "rangeDouble",
-                    "minimumCount", "maximumCount", "count", "countRange"
+                    "minimumCount", "maximumCount", "count"
                 ]
                 
                 if !validConstraints.contains(constraintName) {
