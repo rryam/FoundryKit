@@ -45,7 +45,11 @@ let package = Package(
     // Tests
     .testTarget(
       name: "FoundryKitTests",
-      dependencies: ["FoundryKit"]
+      dependencies: [
+        "FoundryKit",
+        "FoundryGenerableMacros",
+        .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax")
+      ]
     ),
   ]
 )
