@@ -75,6 +75,11 @@ internal final class MLXBackend: FoundryBackend, @unchecked Sendable {
         return try await respond(to: promptString, options: options)
     }
     
+    /*
+    // MARK: - Generable methods commented out for 0.0.1 release
+    // These methods support structured generation and are temporarily disabled
+    // to focus on simple text generation for the initial release.
+    
     func respond<Content>(
         to prompt: String,
         generating type: Content.Type,
@@ -157,7 +162,9 @@ internal final class MLXBackend: FoundryBackend, @unchecked Sendable {
             )
         )
     }
+    */
     
+    /*
     func respond<Content>(
         to prompt: Prompt,
         generating type: Content.Type,
@@ -172,7 +179,9 @@ internal final class MLXBackend: FoundryBackend, @unchecked Sendable {
             options: options
         )
     }
+    */
     
+    /*
     func streamResponse<Content>(
         to prompt: String,
         generating type: Content.Type,
@@ -187,7 +196,9 @@ internal final class MLXBackend: FoundryBackend, @unchecked Sendable {
             options: options
         )
     }
+    */
     
+    /*
     func streamResponse<Content>(
         to prompt: Prompt,
         generating type: Content.Type,
@@ -202,6 +213,7 @@ internal final class MLXBackend: FoundryBackend, @unchecked Sendable {
             options: options
         )
     }
+    */
     
     // MARK: - Private Helpers
     
@@ -236,6 +248,7 @@ internal final class MLXBackend: FoundryBackend, @unchecked Sendable {
         return String(describing: prompt)
     }
     
+    /*
     private func extractSchema<T: Generable>(from type: T.Type) throws -> [String: Any] {
         // Check if the type conforms to StructuredOutput for custom schema
         if let structuredType = type as? any StructuredOutput.Type {
@@ -245,7 +258,10 @@ internal final class MLXBackend: FoundryBackend, @unchecked Sendable {
         // For standard Generable types, use basic schema extraction
         return SchemaExtractor.extractSchema(from: type)
     }
+    */
     
+    // Commented out for 0.0.1 release - depends on internal types
+    /*
     private func createStructuredPrompt(prompt: String, schema: [String: Any]) -> String {
         // Use the structured prompt builder with model-specific optimizations
         let modelId = model.identifier.lowercased()
@@ -267,12 +283,16 @@ internal final class MLXBackend: FoundryBackend, @unchecked Sendable {
             config: config
         )
     }
+    */
     
+    /*
     // Track current generation type for schema access
     private var currentGenerationType: Any.Type?
+    */
     
     // MARK: - Guided Generation
     
+    /*
     private func respondWithGuidedGeneration<Content>(
         to prompt: String,
         generating type: Content.Type,
@@ -347,6 +367,7 @@ internal final class MLXBackend: FoundryBackend, @unchecked Sendable {
             transcriptEntries: [promptEntry, responseEntry][...]
         )
     }
+    */
     
     // Removed extractProperties - using SchemaNode's init(from:name:) instead
     
@@ -357,6 +378,7 @@ internal final class MLXBackend: FoundryBackend, @unchecked Sendable {
         return mlxModel
     }
     
+    /*
     private func parseStructuredResponse<T: Generable>(
         _ response: String,
         into type: T.Type
@@ -409,6 +431,7 @@ internal final class MLXBackend: FoundryBackend, @unchecked Sendable {
             throw error
         }
     }
+    */
     
     // Removed in favor of JSONExtractor.extractJSON
     
@@ -425,6 +448,7 @@ internal final class MLXBackend: FoundryBackend, @unchecked Sendable {
     }
 }
 
+/*
 /// AsyncSequence implementation for MLX streaming.
 private struct MLXStreamSequence<Content: Generable & Sendable>: AsyncSequence {
     typealias Element = Content.PartiallyGenerated
@@ -507,3 +531,4 @@ private struct MLXStreamSequence<Content: Generable & Sendable>: AsyncSequence {
         }
     }
 }
+*/

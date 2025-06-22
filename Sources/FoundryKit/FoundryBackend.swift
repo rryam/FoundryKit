@@ -39,6 +39,8 @@ public protocol FoundryBackend: Sendable {
         options: FoundryGenerationOptions
     ) async throws -> BackendResponse<String>
     
+    // Commented out for 0.0.1 release - focusing on simple text generation only
+    /*
     /// Generates a structured response to a string prompt.
     func respond<Content>(
         to prompt: String,
@@ -70,6 +72,7 @@ public protocol FoundryBackend: Sendable {
         includeSchemaInPrompt: Bool,
         options: FoundryGenerationOptions
     ) -> any AsyncSequence<Content.PartiallyGenerated, any Error> where Content: Generable & Sendable
+    */
 }
 
 /// Response type returned by backend implementations.

@@ -1,3 +1,8 @@
+/*
+Note: This file has been commented out as it tests the functional behavior of
+the @FoundryGenerable and @FoundryGuide macros, which are internal implementation
+details not exposed in the public API.
+
 import Testing
 import FoundryKit
 import Foundation
@@ -345,3 +350,4 @@ struct FoundryGenerableMacroFunctionalTests {
         let _: any Identifiable.Type = TestProduct.PartiallyGenerated.self
     }
 }
+*/

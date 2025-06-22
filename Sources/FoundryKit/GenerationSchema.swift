@@ -38,7 +38,7 @@ public struct RuntimeGenerationSchema: Sendable {
     }
     
     /// Get valid properties at a given path
-    public func getValidProperties(at path: [String]) -> Set<String> {
+    internal func getValidProperties(at path: [String]) -> Set<String> {
         return root.getValidProperties(at: path)
     }
     
@@ -232,7 +232,7 @@ public struct SchemaNode: Sendable {
     }
     
     /// Get valid properties at a given path
-    public func getValidProperties(at path: [String]) -> Set<String> {
+    internal func getValidProperties(at path: [String]) -> Set<String> {
         if path.isEmpty {
             return Set(properties.keys)
         }
@@ -246,7 +246,7 @@ public struct SchemaNode: Sendable {
     }
     
     /// Get schema type for a property
-    public func getSchemaType(at path: [String], property: String) -> SchemaType? {
+    internal func getSchemaType(at path: [String], property: String) -> SchemaType? {
         if path.isEmpty {
             return properties[property]?.type
         }

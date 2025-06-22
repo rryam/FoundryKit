@@ -73,7 +73,7 @@ public final class GuidedJSONProcessor: LogitProcessor, @unchecked Sendable {
     private var cachedValidTokens: Set<Int> = []
     private var cachedIsComplete: Bool = false
     
-    public init(schema: GuidedGenerationSchema, tokenizer: Tokenizer) {
+    internal init(schema: GuidedGenerationSchema, tokenizer: Tokenizer) {
         self.schema = schema
         self.tokenizer = tokenizer
         self.state = ProcessorState(schema: schema)
@@ -150,7 +150,7 @@ public final class SyncGuidedJSONProcessor: LogitProcessor, @unchecked Sendable 
     private var parseState: JSONParseState
     private var validTokenCache: [String: Set<Int>] = [:]
     
-    public init(schema: GuidedGenerationSchema, tokenizer: Tokenizer) {
+    internal init(schema: GuidedGenerationSchema, tokenizer: Tokenizer) {
         self.schema = schema
         self.tokenizer = tokenizer
         self.parseState = JSONParseState(schema: schema)

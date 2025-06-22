@@ -39,7 +39,7 @@ public struct StructuredGenerationConfig: Sendable {
     /// Model type identifier for model-specific prompting
     public let modelType: String?
     
-    public init(
+    internal init(
         includeSchemaInPrompt: Bool = true,
         includeExample: Bool = true,
         maxRetries: Int = 3,
@@ -67,7 +67,7 @@ public struct FunctionSpec {
     public let parameters: [String: Any]
     public let required: [String]
     
-    public init(
+    internal init(
         name: String,
         description: String,
         parameters: [String: Any],
@@ -98,7 +98,7 @@ public struct FunctionCall: Codable {
     public let name: String
     public let arguments: [String: Any]
     
-    public init(name: String, arguments: [String: Any]) {
+    internal init(name: String, arguments: [String: Any]) {
         self.name = name
         self.arguments = arguments
     }

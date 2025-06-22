@@ -73,6 +73,11 @@ internal final class FoundationBackend: FoundryBackend {
         }
     }
     
+    /*
+    // MARK: - Generable methods commented out for 0.0.1 release
+    // These methods support structured generation and are temporarily disabled
+    // to focus on simple text generation for the initial release.
+    
     func respond<Content>(
         to prompt: String,
         generating type: Content.Type,
@@ -101,7 +106,9 @@ internal final class FoundationBackend: FoundryBackend {
             )
         }
     }
+    */
     
+    /*
     func respond<Content>(
         to prompt: Prompt,
         generating type: Content.Type,
@@ -130,7 +137,9 @@ internal final class FoundationBackend: FoundryBackend {
             )
         }
     }
+    */
     
+    /*
     func streamResponse<Content>(
         to prompt: String,
         generating type: Content.Type,
@@ -145,7 +154,9 @@ internal final class FoundationBackend: FoundryBackend {
         )
         return FoundationStreamWrapper(stream: stream)
     }
+    */
     
+    /*
     func streamResponse<Content>(
         to prompt: Prompt,
         generating type: Content.Type,
@@ -160,6 +171,7 @@ internal final class FoundationBackend: FoundryBackend {
         )
         return FoundationStreamWrapper(stream: stream)
     }
+    */
     
     private func mapFoundationError(_ error: LanguageModelSession.GenerationError) -> FoundryGenerationError {
         switch error {
@@ -216,6 +228,7 @@ internal final class FoundationBackend: FoundryBackend {
     }
 }
 
+/*
 /// Wrapper to adapt Foundation Models stream to our AsyncSequence protocol.
 private struct FoundationStreamWrapper<Content>: AsyncSequence where Content: Generable & Sendable {
     typealias Element = Content.PartiallyGenerated
@@ -242,3 +255,4 @@ private struct FoundationStreamWrapper<Content>: AsyncSequence where Content: Ge
         }
     }
 }
+*/

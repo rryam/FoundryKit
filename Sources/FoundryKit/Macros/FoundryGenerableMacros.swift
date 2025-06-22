@@ -2,6 +2,8 @@ import Foundation
 
 // MARK: - Macro Declarations
 
+// Commented out for 0.0.1 release - focusing on simple text generation only
+/*
 /// A macro that generates `Generable` conformance and JSON schema for structured generation.
 ///
 /// This macro automatically generates:
@@ -56,29 +58,30 @@ public macro FoundryGuide(_ description: String? = nil, _ constraints: Validatio
     module: "FoundryGenerableMacros",
     type: "FoundryGuideMacro"
 )
+*/
 
 
 // MARK: - Supporting Types
 
 /// Protocol that combines FoundryGenerable functionality with StructuredOutput
-public protocol FoundryStructuredOutput: StructuredOutput, Generable {
+internal protocol FoundryStructuredOutput: StructuredOutput, Generable {
     /// Validation rules for the type
     static var validationRules: [String: ValidationRule] { get }
 }
 
 /// Represents a validation rule for a property
-public struct ValidationRule {
-    public let propertyName: String
-    public let rules: [ValidationConstraint]
+internal struct ValidationRule {
+    internal let propertyName: String
+    internal let rules: [ValidationConstraint]
     
-    public init(propertyName: String, rules: [ValidationConstraint]) {
+    internal init(propertyName: String, rules: [ValidationConstraint]) {
         self.propertyName = propertyName
         self.rules = rules
     }
 }
 
 /// Type-safe validation constraints for guided generation, matching Foundation Models Framework patterns
-public enum ValidationConstraint: Sendable {
+internal enum ValidationConstraint: Sendable {
     // MARK: - String Constraints
     
     /// Enforces that the string be precisely the given value
@@ -137,7 +140,7 @@ public enum ValidationConstraint: Sendable {
 }
 
 /// Represents count constraints for arrays
-public enum CountConstraint: Sendable {
+internal enum CountConstraint: Sendable {
     case exact(Int)
     case range(ClosedRange<Int>)
 }
@@ -146,12 +149,12 @@ public enum CountConstraint: Sendable {
 
 extension ValidationConstraint {
     /// Convenience method for exact count
-    public static func count(_ value: Int) -> ValidationConstraint {
+    internal static func count(_ value: Int) -> ValidationConstraint {
         return .count(.exact(value))
     }
     
     /// Convenience method for count range
-    public static func count(_ range: ClosedRange<Int>) -> ValidationConstraint {
+    internal static func count(_ range: ClosedRange<Int>) -> ValidationConstraint {
         return .count(.range(range))
     }
 }
@@ -160,7 +163,7 @@ extension ValidationConstraint {
 
 extension FoundryStructuredOutput {
     /// Validates an instance against the defined validation rules
-    public func validate() throws {
+    internal func validate() throws {
         let mirror = Mirror(reflecting: self)
         
         for (label, value) in mirror.children {
@@ -262,7 +265,7 @@ extension FoundryStructuredOutput {
 }
 
 /// Validation errors
-public enum ValidationError: LocalizedError {
+internal enum ValidationError: LocalizedError {
     case belowMinimum(String, Int)
     case aboveMaximum(String, Int)
     case outOfRange(String, ClosedRange<Int>)
@@ -281,7 +284,7 @@ public enum ValidationError: LocalizedError {
     case notEqualToConstant(String, String, String)
     case customValidationFailed(String)
     
-    public var errorDescription: String? {
+    internal var errorDescription: String? {
         switch self {
         case .belowMinimum(let property, let min):
             return "\(property) is below minimum value of \(min)"

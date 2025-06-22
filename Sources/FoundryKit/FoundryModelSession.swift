@@ -111,6 +111,8 @@ extension FoundryModelSession {
         }
     }
     
+    // Commented out for 0.0.1 release - focusing on simple text generation only
+    /*
     /// A structure that stores the output of a response stream.
     public struct ResponseStream<Content> where Content: Generable & Sendable {
         private let asyncSequence: any AsyncSequence<Content.PartiallyGenerated, any Error>
@@ -119,6 +121,7 @@ extension FoundryModelSession {
             self.asyncSequence = sequence
         }
     }
+    */
 }
 
 // MARK: - Text Generation
@@ -163,6 +166,8 @@ extension FoundryModelSession {
 
 // MARK: - Structured Generation
 
+// Commented out for 0.0.1 release - focusing on simple text generation only
+/*
 extension FoundryModelSession {
     
     /// Produces a generable object as a response to a string prompt.
@@ -222,9 +227,12 @@ extension FoundryModelSession {
         )
     }
 }
+*/
 
 // MARK: - Dynamic Schema Generation
 
+// Commented out for 0.0.1 release - focusing on simple text generation only
+/*
 extension FoundryModelSession {
     
     /// Produces a response using a dynamic generation schema.
@@ -290,46 +298,50 @@ extension FoundryModelSession {
         }
     }
 }
+*/
 
 // MARK: - Streaming Generation
 
-extension FoundryModelSession {
-    
-    /// Produces a response stream to a prompt for generable types.
-    public func streamResponse<Content>(
-        to prompt: String,
-        generating type: Content.Type,
-        includeSchemaInPrompt: Bool = true,
-        options: FoundryGenerationOptions = FoundryGenerationOptions()
-    ) -> ResponseStream<Content> where Content: Generable & Sendable {
-        let stream = backend.streamResponse(
-            to: prompt,
-            generating: type,
-            includeSchemaInPrompt: includeSchemaInPrompt,
-            options: options
-        )
-        return ResponseStream(stream)
-    }
-    
-    /// Produces a response stream to a Prompt for generable types.
-    public func streamResponse<Content>(
-        to prompt: Prompt,
-        generating type: Content.Type,
-        includeSchemaInPrompt: Bool = true,
-        options: FoundryGenerationOptions = FoundryGenerationOptions()
-    ) -> ResponseStream<Content> where Content: Generable & Sendable {
-        let stream = backend.streamResponse(
-            to: prompt,
-            generating: type,
-            includeSchemaInPrompt: includeSchemaInPrompt,
-            options: options
-        )
-        return ResponseStream(stream)
-    }
-}
+// Commented out for 0.0.1 release - focusing on simple text generation only
+// extension FoundryModelSession {
+//     
+//     /// Produces a response stream to a prompt for generable types.
+//     public func streamResponse<Content>(
+//         to prompt: String,
+//         generating type: Content.Type,
+//         includeSchemaInPrompt: Bool = true,
+//         options: FoundryGenerationOptions = FoundryGenerationOptions()
+//     ) -> ResponseStream<Content> where Content: Generable & Sendable {
+//         let stream = backend.streamResponse(
+//             to: prompt,
+//             generating: type,
+//             includeSchemaInPrompt: includeSchemaInPrompt,
+//             options: options
+//         )
+//         return ResponseStream(stream)
+//     }
+//     
+//     /// Produces a response stream to a Prompt for generable types.
+//     public func streamResponse<Content>(
+//         to prompt: Prompt,
+//         generating type: Content.Type,
+//         includeSchemaInPrompt: Bool = true,
+//         options: FoundryGenerationOptions = FoundryGenerationOptions()
+//     ) -> ResponseStream<Content> where Content: Generable & Sendable {
+//         let stream = backend.streamResponse(
+//             to: prompt,
+//             generating: type,
+//             includeSchemaInPrompt: includeSchemaInPrompt,
+//             options: options
+//         )
+//         return ResponseStream(stream)
+//     }
+// }
 
 // MARK: - Utility Methods
 
+// Commented out for 0.0.1 release - focusing on simple text generation only
+/*
 extension FoundryModelSession {
     
     /// Extracts JSON from a model response that may contain additional text.
@@ -370,6 +382,7 @@ extension FoundryModelSession {
         return JSONExtractor.repairJSON(jsonString)
     }
 }
+*/
 
 // MARK: - Advanced MLX Access
 
@@ -403,42 +416,43 @@ extension FoundryModelSession {
         return nil
     }
     
-    /// Creates a guided generation session for structured JSON generation with MLX models.
-    ///
-    /// This method creates a session that enforces token-level constraints to ensure
-    /// the generated output conforms to a specific JSON schema.
-    ///
-    /// Example usage:
-    /// ```swift
-    /// let schema = RuntimeGenerationSchema(root: schemaNode, dependencies: [])
-    /// if let guidedSession = await session.createGuidedSession(schema: schema) {
-    ///     let result = try await guidedSession.generate(prompt: "Create a user")
-    /// }
-    /// ```
-    ///
-    /// - Parameters:
-    ///   - schema: The generation schema to enforce
-    ///   - temperature: Temperature for sampling (default: 0.7)
-    ///   - topP: Top-p sampling parameter (default: 1.0)
-    /// - Returns: A GuidedGenerationSession if using MLX backend, nil otherwise
-    @available(iOS 16.0, macOS 13.0, *)
-    public func createGuidedSession(
-        schema: RuntimeGenerationSchema,
-        temperature: Float = 0.7,
-        topP: Float = 1.0
-    ) async -> GuidedGenerationSession? {
-        guard model.isMLX else { return nil }
-        
-        if let mlxBackend = backend as? MLXBackend {
-            return mlxBackend.createGuidedSession(
-                schema: schema,
-                temperature: temperature,
-                topP: topP
-            )
-        }
-        
-        return nil
-    }
+    // Commented out for 0.0.1 release - focusing on simple text generation only
+    // Creates a guided generation session for structured JSON generation with MLX models.
+    //
+    // This method creates a session that enforces token-level constraints to ensure
+    // the generated output conforms to a specific JSON schema.
+    //
+    // Example usage:
+    // ```swift
+    // let schema = RuntimeGenerationSchema(root: schemaNode, dependencies: [])
+    // if let guidedSession = await session.createGuidedSession(schema: schema) {
+    //     let result = try await guidedSession.generate(prompt: "Create a user")
+    // }
+    // ```
+    //
+    // - Parameters:
+    //   - schema: The generation schema to enforce
+    //   - temperature: Temperature for sampling (default: 0.7)
+    //   - topP: Top-p sampling parameter (default: 1.0)
+    // - Returns: A GuidedGenerationSession if using MLX backend, nil otherwise
+    // @available(iOS 16.0, macOS 13.0, *)
+    // public func createGuidedSession(
+    //     schema: RuntimeGenerationSchema,
+    //     temperature: Float = 0.7,
+    //     topP: Float = 1.0
+    // ) async -> GuidedGenerationSession? {
+    //     guard model.isMLX else { return nil }
+    //     
+    //     if let mlxBackend = backend as? MLXBackend {
+    //         return mlxBackend.createGuidedSession(
+    //             schema: schema,
+    //             temperature: temperature,
+    //             topP: topP
+    //         )
+    //     }
+    //     
+    //     return nil
+    // }
 }
 
 // MARK: - Private Helpers
@@ -452,40 +466,43 @@ extension FoundryModelSession {
         }
     }
     
-    private func convertToFoundationModelSchema(_ schema: DynamicGenerationSchema) -> FoundationModels.DynamicGenerationSchema {
-        // Handle anyOf case first
-        if let anyOf = schema.anyOf {
-            return FoundationModels.DynamicGenerationSchema(name: schema.name, anyOf: anyOf)
-        }
-        
-        // Convert properties to Foundation Models format
-        var convertedProperties: [FoundationModels.DynamicGenerationSchema.Property] = []
-        
-        for property in schema.properties {
-            let convertedSchema = convertToFoundationModelSchema(property.schema)
-            
-            // Create property
-            // Note: FoundationModels.DynamicGenerationSchema doesn't support required properties
-            // in the same way as our internal schema, so this information is lost in conversion
-            let fmProperty = FoundationModels.DynamicGenerationSchema.Property(
-                name: property.name,
-                schema: convertedSchema
-            )
-            convertedProperties.append(fmProperty)
-        }
-        
-        // Create schema with all properties
-        let fmSchema = FoundationModels.DynamicGenerationSchema(
-            name: schema.name,
-            properties: convertedProperties
-        )
-        
-        return fmSchema
-    }
+    // Commented out for 0.0.1 release - focusing on simple text generation only
+    // private func convertToFoundationModelSchema(_ schema: DynamicGenerationSchema) -> FoundationModels.DynamicGenerationSchema {
+    //     // Handle anyOf case first
+    //     if let anyOf = schema.anyOf {
+    //         return FoundationModels.DynamicGenerationSchema(name: schema.name, anyOf: anyOf)
+    //     }
+    //     
+    //     // Convert properties to Foundation Models format
+    //     var convertedProperties: [FoundationModels.DynamicGenerationSchema.Property] = []
+    //     
+    //     for property in schema.properties {
+    //         let convertedSchema = convertToFoundationModelSchema(property.schema)
+    //         
+    //         // Create property
+    //         // Note: FoundationModels.DynamicGenerationSchema doesn't support required properties
+    //         // in the same way as our internal schema, so this information is lost in conversion
+    //         let fmProperty = FoundationModels.DynamicGenerationSchema.Property(
+    //             name: property.name,
+    //             schema: convertedSchema
+    //         )
+    //         convertedProperties.append(fmProperty)
+    //     }
+    //     
+    //     // Create schema with all properties
+    //     let fmSchema = FoundationModels.DynamicGenerationSchema(
+    //         name: schema.name,
+    //         properties: convertedProperties
+    //     )
+    //     
+    //     return fmSchema
+    // }
 }
 
 // MARK: - AsyncSequence Conformance for ResponseStream
 
+// Commented out for 0.0.1 release - focusing on simple text generation only
+/*
 extension FoundryModelSession.ResponseStream: AsyncSequence {
     public typealias Element = Content.PartiallyGenerated
     
@@ -505,3 +522,4 @@ extension FoundryModelSession.ResponseStream: AsyncSequence {
         }
     }
 }
+*/
