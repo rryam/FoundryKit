@@ -4,7 +4,7 @@ import Foundation
 
 /// Protocol for types that can be generated as structured output by language models.
 /// This extends the Generable protocol with additional metadata for MLX models.
-public protocol StructuredOutput: Generable {
+internal protocol StructuredOutput: Generable {
     /// Returns a JSON schema representation of this type
     static var jsonSchema: [String: Any] { get }
     
@@ -14,30 +14,30 @@ public protocol StructuredOutput: Generable {
 
 // Default implementation
 extension StructuredOutput {
-    public static var exampleJSON: String? { nil }
+    internal static var exampleJSON: String? { nil }
 }
 
 // MARK: - Structured Generation Configuration
 
 /// Configuration options for structured generation with MLX models
-public struct StructuredGenerationConfig: Sendable {
+internal struct StructuredGenerationConfig: Sendable {
     /// Whether to include the schema in the prompt
-    public let includeSchemaInPrompt: Bool
+    internal let includeSchemaInPrompt: Bool
     
     /// Whether to include an example in the prompt
-    public let includeExample: Bool
+    internal let includeExample: Bool
     
     /// Maximum number of retries for parsing
-    public let maxRetries: Int
+    internal let maxRetries: Int
     
     /// Custom system prompt for structured generation
-    public let systemPrompt: String?
+    internal let systemPrompt: String?
     
     /// Temperature override for structured generation (lower is more deterministic)
-    public let temperature: Double?
+    internal let temperature: Double?
     
     /// Model type identifier for model-specific prompting
-    public let modelType: String?
+    internal let modelType: String?
     
     internal init(
         includeSchemaInPrompt: Bool = true,
@@ -55,17 +55,17 @@ public struct StructuredGenerationConfig: Sendable {
         self.modelType = modelType
     }
     
-    public static let `default` = StructuredGenerationConfig()
+    internal static let `default` = StructuredGenerationConfig()
 }
 
 // MARK: - Tool/Function Calling Support
 
 /// Represents a function that can be called by the model
-public struct FunctionSpec {
-    public let name: String
-    public let description: String
-    public let parameters: [String: Any]
-    public let required: [String]
+internal struct FunctionSpec {
+    internal let name: String
+    internal let description: String
+    internal let parameters: [String: Any]
+    internal let required: [String]
     
     internal init(
         name: String,
@@ -80,7 +80,7 @@ public struct FunctionSpec {
     }
     
     /// Converts to JSON representation for the prompt
-    public var jsonRepresentation: [String: Any] {
+    internal var jsonRepresentation: [String: Any] {
         [
             "name": name,
             "description": description,
@@ -94,9 +94,9 @@ public struct FunctionSpec {
 }
 
 /// Represents a function call made by the model
-public struct FunctionCall: Codable {
-    public let name: String
-    public let arguments: [String: Any]
+internal struct FunctionCall: Codable {
+    internal let name: String
+    internal let arguments: [String: Any]
     
     internal init(name: String, arguments: [String: Any]) {
         self.name = name
@@ -109,7 +109,7 @@ public struct FunctionCall: Codable {
         case arguments
     }
     
-    public init(from decoder: Decoder) throws {
+    internal init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         name = try container.decode(String.self, forKey: .name)
         
@@ -122,7 +122,7 @@ public struct FunctionCall: Codable {
         }
     }
     
-    public func encode(to encoder: Encoder) throws {
+    internal func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(name, forKey: .name)
         
@@ -136,9 +136,9 @@ public struct FunctionCall: Codable {
 // MARK: - JSON Parsing Utilities
 
 /// Utilities for extracting and parsing JSON from LLM responses
-public enum JSONExtractor {
+internal enum JSONExtractor {
     /// Extracts JSON from a response that may contain additional text
-    public static func extractJSON(from response: String) -> String? {
+    internal static func extractJSON(from response: String) -> String? {
         // Try to find JSON between code blocks first
         if let match = response.range(of: "```json\\n[\\s\\S]+?\\n```", options: .regularExpression) {
             let jsonContent = String(response[match])
@@ -201,7 +201,7 @@ public enum JSONExtractor {
     }
     
     /// Attempts to fix common JSON errors in LLM responses
-    public static func repairJSON(_ jsonString: String) -> String? {
+    internal static func repairJSON(_ jsonString: String) -> String? {
         var repaired = jsonString
         
         // Fix trailing commas
@@ -238,9 +238,9 @@ public enum JSONExtractor {
 // MARK: - Prompt Building
 
 /// Utilities for building prompts for structured generation
-public enum StructuredPromptBuilder {
+internal enum StructuredPromptBuilder {
     /// Creates a prompt for structured data generation
-    public static func buildPrompt(
+    internal static func buildPrompt(
         userPrompt: String,
         schema: [String: Any],
         example: String? = nil,
@@ -402,7 +402,7 @@ public enum StructuredPromptBuilder {
     }
     
     /// Creates a prompt for function/tool calling
-    public static func buildToolCallingPrompt(
+    internal static func buildToolCallingPrompt(
         userPrompt: String,
         functions: [FunctionSpec],
         config: StructuredGenerationConfig = .default
@@ -444,7 +444,7 @@ public enum StructuredPromptBuilder {
     }
     
     /// Creates a system prompt optimized for structured generation
-    public static func structuredSystemPrompt(modelType: String? = nil) -> String {
+    internal static func structuredSystemPrompt(modelType: String? = nil) -> String {
         let basePrompt = "You are a helpful assistant that always responds with valid JSON when requested."
         
         // Add model-specific instructions if known
@@ -465,9 +465,9 @@ public enum StructuredPromptBuilder {
 // MARK: - Schema Extraction Helpers
 
 /// Helper to extract schema information from Swift types
-public enum SchemaExtractor {
+internal enum SchemaExtractor {
     /// Basic schema extraction for common types
-    public static func extractSchema(from type: Any.Type) -> [String: Any] {
+    internal static func extractSchema(from type: Any.Type) -> [String: Any] {
         // This is a simplified implementation
         // In a real implementation, we would use Mirror or other reflection APIs
         var schema: [String: Any] = ["type": "object"]
@@ -481,7 +481,7 @@ public enum SchemaExtractor {
     }
     
     /// Creates a schema for a function parameter
-    public static func parameterSchema(
+    internal static func parameterSchema(
         type: String,
         description: String? = nil,
         enum values: [Any]? = nil,

@@ -6,12 +6,12 @@ import MLXLMCommon
 
 /// Schema representation specific to guided generation (to avoid conflicts)
 // Using RuntimeGenerationSchema from GenerationSchema.swift
-public typealias GuidedGenerationSchema = RuntimeGenerationSchema
+internal typealias GuidedGenerationSchema = RuntimeGenerationSchema
 
 // MARK: - MLX LogitProcessor Integration
 
 /// State container for thread-safe access
-public actor ProcessorState {
+internal actor ProcessorState {
     var parseState: JSONParseState
     var validTokenCache: [String: Set<Int>] = [:]
     
@@ -63,7 +63,7 @@ public actor ProcessorState {
 
 /// A constraint processor for guided JSON generation
 /// Now conforms to MLX's LogitProcessor protocol for token-level constraints!
-public final class GuidedJSONProcessor: LogitProcessor, @unchecked Sendable {
+internal final class GuidedJSONProcessor: LogitProcessor, @unchecked Sendable {
     private let schema: GuidedGenerationSchema
     private let tokenizer: Tokenizer
     private let state: ProcessorState
@@ -144,7 +144,7 @@ public final class GuidedJSONProcessor: LogitProcessor, @unchecked Sendable {
 
 /// Alternative implementation that avoids actors entirely
 /// This is more suitable for the synchronous LogitProcessor protocol
-public final class SyncGuidedJSONProcessor: LogitProcessor, @unchecked Sendable {
+internal final class SyncGuidedJSONProcessor: LogitProcessor, @unchecked Sendable {
     private let schema: GuidedGenerationSchema
     private let tokenizer: Tokenizer
     private var parseState: JSONParseState
@@ -250,7 +250,7 @@ public final class SyncGuidedJSONProcessor: LogitProcessor, @unchecked Sendable 
 // MARK: - Custom LogitSampler for Guided Generation
 
 /// A sampler that works with guided generation constraints
-public struct GuidedSampler: LogitSampler {
+internal struct GuidedSampler: LogitSampler {
     private let temperature: Float
     private let topP: Float
     
@@ -276,7 +276,7 @@ public struct GuidedSampler: LogitSampler {
 // MARK: - JSON Parse State
 
 /// Tracks the current state of JSON parsing and determines valid next characters
-public class JSONParseState {
+internal class JSONParseState {
     indirect enum State {
         case start
         case inObject(path: [String])
@@ -549,15 +549,15 @@ extension MLXBackend {
 /// let guidedSession = mlxBackend.createGuidedSession(schema: schema)
 /// let result = try await guidedSession.generate(prompt: "Create a user profile")
 /// ```
-public struct GuidedGenerationSession {
+internal struct GuidedGenerationSession {
     /// The MLX model context used for generation
-    public let model: ModelContext
+    internal let model: ModelContext
     
     /// The processor that enforces JSON constraints
-    public let processor: SyncGuidedJSONProcessor
+    internal let processor: SyncGuidedJSONProcessor
     
     /// The sampler used for token selection
-    public let sampler: GuidedSampler
+    internal let sampler: GuidedSampler
     
     /// Generates text with guided constraints.
     ///
@@ -566,7 +566,7 @@ public struct GuidedGenerationSession {
     ///   - maxTokens: Maximum number of tokens to generate (default: 512)
     /// - Returns: The generated JSON string that conforms to the schema
     /// - Throws: An error if generation fails
-    public func generate(prompt: String, maxTokens: Int = 512) async throws -> String {
+    internal func generate(prompt: String, maxTokens: Int = 512) async throws -> String {
         // Use MLX's generate function with our custom processor and sampler
         let input = try await model.processor.prepare(
             input: UserInput(chat: [.user(prompt)], processing: .init())

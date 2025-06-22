@@ -3,7 +3,7 @@ import Foundation
 // MARK: - Schema Types
 
 /// Represents the type of a schema node
-public indirect enum SchemaType: Equatable, Sendable {
+internal indirect enum SchemaType: Equatable, Sendable {
     case string
     case number
     case integer
@@ -15,24 +15,24 @@ public indirect enum SchemaType: Equatable, Sendable {
 }
 
 /// A runtime representation of a generation schema for guided generation
-public struct RuntimeGenerationSchema: Sendable {
-    public let root: SchemaNode
-    public let dependencies: [SchemaNode]
+internal struct RuntimeGenerationSchema: Sendable {
+    internal let root: SchemaNode
+    internal let dependencies: [SchemaNode]
     
     /// Initialize from a Generable type
-    public init<T: Generable>(from type: T.Type) {
+    internal init<T: Generable>(from type: T.Type) {
         self.root = SchemaNode(from: type)
         self.dependencies = []
     }
     
     /// Initialize with a dynamic schema
-    public init(root: DynamicGenerationSchema, dependencies: [DynamicGenerationSchema] = []) throws {
+    internal init(root: DynamicGenerationSchema, dependencies: [DynamicGenerationSchema] = []) throws {
         self.root = try SchemaNode(from: root)
         self.dependencies = try dependencies.map { try SchemaNode(from: $0) }
     }
     
     /// Initialize directly with a schema node
-    public init(root: SchemaNode, dependencies: [SchemaNode] = []) {
+    internal init(root: SchemaNode, dependencies: [SchemaNode] = []) {
         self.root = root
         self.dependencies = dependencies
     }
@@ -43,21 +43,21 @@ public struct RuntimeGenerationSchema: Sendable {
     }
     
     /// Get the schema type for a property at a given path
-    public func getSchemaType(at path: [String], property: String) -> SchemaType? {
+    internal func getSchemaType(at path: [String], property: String) -> SchemaType? {
         return root.getSchemaType(at: path, property: property)
     }
 }
 
 /// Node representation for schema traversal
-public struct SchemaNode: Sendable {
-    public let name: String
-    public let type: SchemaType
-    public let properties: [String: SchemaNode]
-    public let required: Set<String>
-    public let constraints: [Constraint]
+internal struct SchemaNode: Sendable {
+    internal let name: String
+    internal let type: SchemaType
+    internal let properties: [String: SchemaNode]
+    internal let required: Set<String>
+    internal let constraints: [Constraint]
     
     /// Initialize from a Generable type using reflection
-    public init<T: Generable>(from type: T.Type) {
+    internal init<T: Generable>(from type: T.Type) {
         self.name = String(describing: type)
         
         // For now, use a basic implementation
@@ -69,7 +69,7 @@ public struct SchemaNode: Sendable {
     }
     
     /// Initialize from a dictionary representation
-    public init(from dict: [String: Any], name: String) {
+    internal init(from dict: [String: Any], name: String) {
         self.name = name
         
         // Similar parsing logic as above
@@ -124,7 +124,7 @@ public struct SchemaNode: Sendable {
     }
     
     /// Initialize from a DynamicGenerationSchema
-    public init(from dynamic: DynamicGenerationSchema) throws {
+    internal init(from dynamic: DynamicGenerationSchema) throws {
         self.name = dynamic.name
         
         switch dynamic.type {
@@ -261,7 +261,7 @@ public struct SchemaNode: Sendable {
 }
 
 /// Constraint types for schema validation
-public enum Constraint: Sendable {
+internal enum Constraint: Sendable {
     case minLength(Int)
     case maxLength(Int)
     case pattern(String)
@@ -271,28 +271,28 @@ public enum Constraint: Sendable {
 }
 
 /// Dynamic schema builder for runtime schema creation
-public final class DynamicGenerationSchema {
-    public let name: String
-    public let type: SchemaType
-    public var properties: [Property] = []
-    public var required: [String] = []
-    public var items: DynamicGenerationSchema?
-    public var constraints: [DynamicConstraint] = []
-    public var anyOf: [String]?
+internal final class DynamicGenerationSchema {
+    internal let name: String
+    internal let type: SchemaType
+    internal var properties: [Property] = []
+    internal var required: [String] = []
+    internal var items: DynamicGenerationSchema?
+    internal var constraints: [DynamicConstraint] = []
+    internal var anyOf: [String]?
     
     /// Property definition for object schemas
-    public final class Property {
-        public let name: String
-        public let schema: DynamicGenerationSchema
+    internal final class Property {
+        internal let name: String
+        internal let schema: DynamicGenerationSchema
         
-        public init(name: String, schema: DynamicGenerationSchema) {
+        internal init(name: String, schema: DynamicGenerationSchema) {
             self.name = name
             self.schema = schema
         }
     }
     
     /// Dynamic constraint definition
-    public enum DynamicConstraint {
+    internal enum DynamicConstraint {
         case minLength(Int)
         case maxLength(Int)
         case pattern(String)
@@ -302,13 +302,13 @@ public final class DynamicGenerationSchema {
     }
     
     /// Initialize with basic type
-    public init(name: String, type: SchemaType = .object(properties: [:])) {
+    internal init(name: String, type: SchemaType = .object(properties: [:])) {
         self.name = name
         self.type = type
     }
     
     /// Initialize with enum values
-    public init(name: String, anyOf values: [String]) {
+    internal init(name: String, anyOf values: [String]) {
         self.name = name
         self.type = .string
         self.anyOf = values
@@ -316,7 +316,7 @@ public final class DynamicGenerationSchema {
     }
     
     /// Add a property (for object types)
-    public func addProperty(_ property: Property, required: Bool = false) {
+    internal func addProperty(_ property: Property, required: Bool = false) {
         properties.append(property)
         if required {
             self.required.append(property.name)
@@ -324,14 +324,14 @@ public final class DynamicGenerationSchema {
     }
     
     /// Add a constraint
-    public func addConstraint(_ constraint: DynamicConstraint) {
+    internal func addConstraint(_ constraint: DynamicConstraint) {
         constraints.append(constraint)
     }
 }
 
 /// Extension to SchemaType to make it public
 extension SchemaType {
-    public init(from string: String) {
+    internal init(from string: String) {
         switch string {
         case "string": self = .string
         case "number", "integer": self = .number

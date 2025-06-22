@@ -1,4 +1,4 @@
-# FoundryKit (Work in progress)
+# FoundryKit
 
 A unified Swift API for language model inference that seamlessly integrates MLX models and Apple's Foundation Models framework.
 
@@ -16,15 +16,21 @@ Love this project? Check out my books to explore more of AI and iOS development:
 
 Your support helps to keep this project growing!
 
-## Features
+## Features (v0.0.1)
 
 **Unified API**: Same interface for both MLX and Foundation Models  
-**Foundation Models Style**: Uses familiar `@Generable`, `GenerationOptions`, `Instructions`  
-**Namespaced Types**: All types prefixed with `Foundry` to avoid conflicts (e.g., `FoundryGenerable`)  
-**Structured Generation**: Type-safe output with `@Generable` structs  
-**Streaming Support**: Real-time response streaming with AsyncSequence  
+**Simple Text Generation**: Clean, straightforward API for generating text responses  
+**Foundation Models Style**: Uses familiar `Prompt`, `Instructions`, `Guardrails`  
+**Model Selection**: Easy switching between MLX and Foundation Models  
+**Generation Options**: Control temperature, sampling, token limits, and penalties  
 **Full Swift 6 Support**: Complete concurrency safety with Sendable conformance  
 **Zero Learning Curve**: If you know Foundation Models, you know FoundryKit
+
+### Coming Soon
+- Structured generation with `@FoundryGenerable` macro
+- Response streaming
+- Guided JSON generation
+- Schema validation
 
 ## Installation
 
@@ -34,7 +40,7 @@ Add FoundryKit to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/yourusername/FoundryKit", branch: "main")
+    .package(url: "https://github.com/rudrankriyam/FoundryKit", from: "0.0.1")
 ]
 ```
 
@@ -54,47 +60,31 @@ let fmSession = FoundryModelSession(model: .foundation)
 let response = try await fmSession.respond(to: "Hello, world!")
 ```
 
-### Structured Generation
+### Using Prompts
 
 ```swift
-// Use either @Generable (compatibility) or @FoundryGenerable
-@Generable
-struct Recipe: Sendable {
-    @Guide(description: "Recipe name")
-    var name: String
-    
-    @Guide(description: "Cooking time in minutes", .range(10...120))
-    var cookingTime: Int
-    
-    @Guide(description: "List of ingredients", .count(3...10))
-    var ingredients: [String]
+// Build complex prompts using PromptBuilder
+let session = FoundryModelSession(model: .mlx("mlx-community/Llama-3.2-3B"))
+
+let response = try await session.respond {
+    "You are a helpful assistant."
+    "User: What is the capital of France?"
 }
 
-let session = FoundryModelSession(model: .mlx("mistralai/Mistral-7B"))
-let recipe = try await session.respond(
-    to: "Create a chocolate cake recipe",
-    generating: Recipe.self
-)
-
-print("Recipe: \(recipe.content.name)")
-print("Time: \(recipe.content.cookingTime) minutes")
-print("Ingredients: \(recipe.content.ingredients)")
+// Or use explicit Prompt construction
+let prompt = Prompt("Explain quantum computing in simple terms")
+let response = try await session.respond(to: prompt)
 ```
 
-### Streaming Responses
+### With Instructions
 
 ```swift
-let session = FoundryModelSession(model: .foundation)
+let session = FoundryModelSession(
+    model: .foundation,
+    instructions: Instructions("You are a creative writing assistant. Always respond with vivid descriptions.")
+)
 
-for try await partial in session.streamResponse(
-    to: "Tell me a story",
-    generating: Story.self
-) {
-    // Handle partial generation as it arrives
-    if let title = partial.title {
-        print("Title: \(title)")
-    }
-}
+let response = try await session.respond(to: "Describe a sunset")
 ```
 
 ### Custom Generation Options
@@ -103,7 +93,10 @@ for try await partial in session.streamResponse(
 let options = FoundryGenerationOptions(
     sampling: .random(top: 50, seed: 42),
     temperature: 0.8,
-    maxTokens: 500
+    maxTokens: 500,
+    repetitionPenalty: 1.1,
+    frequencyPenalty: 0.1,
+    presencePenalty: 0.1
 )
 
 let response = try await session.respond(
@@ -141,22 +134,56 @@ FoundryKit uses a clean backend architecture:
 - **FoundryModelSession**: Main API class with Foundation Models-style interface
 - **FoundryModel**: Enum for selecting between MLX and Foundation Models
 - **Backend Protocol**: Clean separation between implementations
-- **Type Re-exports**: All Foundation Models types available through FoundryKit
+- **Type Re-exports**: Foundation Models types available through FoundryKit
 
-## Type Naming
+## API Reference
 
-All types are prefixed with `Foundry` to avoid conflicts with Foundation Models:
-- `FoundryGenerable` instead of `Generable`
-- `FoundryPrompt` instead of `Prompt`
-- `FoundryTranscript` instead of `Transcript`
-- etc.
+### Core Types
+- `FoundryModelSession` - Main session class for text generation
+- `FoundryModel` - Model selection (`.mlx(String)` or `.foundation`)
+- `FoundryGenerationOptions` - Generation parameters
+- `Response<String>` - Response container with content and transcript
 
-For convenience, compatibility type aliases are provided without the prefix, so existing code using `@Generable`, `Prompt`, etc. continues to work.
+### Foundation Models Types
+- `Prompt`, `PromptBuilder` - For building prompts
+- `Instructions` - Model behavior instructions
+- `Guardrails` - Safety settings
+- `Transcript` - Conversation history
+
+## Error Handling
+
+FoundryKit provides comprehensive error handling:
+
+```swift
+do {
+    let response = try await session.respond(to: "Hello")
+} catch let error as FoundryGenerationError {
+    switch error {
+    case .backendUnavailable:
+        print("Model backend is not available")
+    case .exceededContextWindowSize:
+        print("Input too long for model")
+    case .modelLoadingFailed(let context):
+        print("Failed to load model: \(context.debugDescription)")
+    default:
+        print("Generation error: \(error.localizedDescription)")
+    }
+}
+```
 
 ## License
 
-[Your License Here]
+MIT License
 
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Roadmap
+
+- [x] v0.0.1 - Simple text generation
+- [ ] v0.1.0 - Structured generation with `@FoundryGenerable`
+- [ ] v0.2.0 - Response streaming
+- [ ] v0.3.0 - Guided JSON generation
+- [ ] v0.4.0 - Tool calling support
+- [ ] v1.0.0 - Production ready with full feature parity
