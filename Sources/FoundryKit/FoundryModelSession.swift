@@ -255,7 +255,7 @@ extension FoundryModelSession {
             let response = try await session.respond(to: prompt, schema: generationSchema)
             
             // Convert to our response type
-            let transcriptEntries = Array(session.transcript).suffix(2)
+            let transcriptEntries = session.transcript.suffix(2)
             updateTranscript(with: transcriptEntries)
             return Response(content: response.content, transcriptEntries: transcriptEntries)
             
@@ -285,7 +285,7 @@ extension FoundryModelSession {
             let session = LanguageModelSession(model: .default, guardrails: guardrails, tools: tools)
             let response = try await session.respond(to: prompt, schema: generationSchema)
             
-            let transcriptEntries = Array(session.transcript).suffix(2)
+            let transcriptEntries = session.transcript.suffix(2)
             updateTranscript(with: transcriptEntries)
             return Response(content: response.content, transcriptEntries: transcriptEntries)
             
