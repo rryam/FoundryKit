@@ -48,6 +48,9 @@ public enum FoundryGenerationError: Error, LocalizedError {
     /// The requested feature is not supported.
     case unsupportedFeature(Context)
     
+    /// The request was rate limited.
+    case rateLimited(Context)
+    
     /// An unknown error occurred during generation.
     case unknown(Context)
     
@@ -73,6 +76,8 @@ public enum FoundryGenerationError: Error, LocalizedError {
             return "A network error occurred."
         case .unsupportedFeature:
             return "The requested feature is not supported."
+        case .rateLimited:
+            return "The request was rate limited. Please try again later."
         case .unknown:
             return "An unknown error occurred."
         }
@@ -100,6 +105,8 @@ public enum FoundryGenerationError: Error, LocalizedError {
             return "Check your internet connection and try again."
         case .unsupportedFeature:
             return "Use an alternative approach or check the documentation for supported features."
+        case .rateLimited:
+            return "Wait a moment before retrying or reduce the frequency of your requests."
         case .unknown:
             return "Try again or contact support if the problem persists."
         }
@@ -117,6 +124,7 @@ public enum FoundryGenerationError: Error, LocalizedError {
              .backendUnavailable(let context),
              .networkError(let context),
              .unsupportedFeature(let context),
+             .rateLimited(let context),
              .unknown(let context):
             return context.debugDescription
         }

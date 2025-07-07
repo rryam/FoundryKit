@@ -189,58 +189,58 @@ extension FoundryStructuredOutput {
             switch constraint {
             case .minimum(let minValue):
                 if let intValue = value as? Int, intValue < minValue {
-                    throw ValidationError.belowMinimum(name, minValue)
+                    throw MacroValidationError.belowMinimum(name, minValue)
                 }
             case .maximum(let maxValue):
                 if let intValue = value as? Int, intValue > maxValue {
-                    throw ValidationError.aboveMaximum(name, maxValue)
+                    throw MacroValidationError.aboveMaximum(name, maxValue)
                 }
             case .range(let range):
                 if let intValue = value as? Int, !range.contains(intValue) {
-                    throw ValidationError.outOfRange(name, range)
+                    throw MacroValidationError.outOfRange(name, range)
                 }
             case .minimumFloat(let minValue):
                 if let floatValue = value as? Float, floatValue < minValue {
-                    throw ValidationError.belowMinimumFloat(name, minValue)
+                    throw MacroValidationError.belowMinimumFloat(name, minValue)
                 }
             case .maximumFloat(let maxValue):
                 if let floatValue = value as? Float, floatValue > maxValue {
-                    throw ValidationError.aboveMaximumFloat(name, maxValue)
+                    throw MacroValidationError.aboveMaximumFloat(name, maxValue)
                 }
             case .rangeFloat(let range):
                 if let floatValue = value as? Float, !range.contains(floatValue) {
-                    throw ValidationError.outOfRangeFloat(name, range)
+                    throw MacroValidationError.outOfRangeFloat(name, range)
                 }
             case .minimumDouble(let minValue):
                 if let doubleValue = value as? Double, doubleValue < minValue {
-                    throw ValidationError.belowMinimumDouble(name, minValue)
+                    throw MacroValidationError.belowMinimumDouble(name, minValue)
                 }
             case .maximumDouble(let maxValue):
                 if let doubleValue = value as? Double, doubleValue > maxValue {
-                    throw ValidationError.aboveMaximumDouble(name, maxValue)
+                    throw MacroValidationError.aboveMaximumDouble(name, maxValue)
                 }
             case .rangeDouble(let range):
                 if let doubleValue = value as? Double, !range.contains(doubleValue) {
-                    throw ValidationError.outOfRangeDouble(name, range)
+                    throw MacroValidationError.outOfRangeDouble(name, range)
                 }
             case .minimumCount(let minCount):
                 if let arrayValue = value as? [Any], arrayValue.count < minCount {
-                    throw ValidationError.tooFewItems(name, minCount)
+                    throw MacroValidationError.tooFewItems(name, minCount)
                 }
             case .maximumCount(let maxCount):
                 if let arrayValue = value as? [Any], arrayValue.count > maxCount {
-                    throw ValidationError.tooManyItems(name, maxCount)
+                    throw MacroValidationError.tooManyItems(name, maxCount)
                 }
             case .count(let constraint):
                 if let arrayValue = value as? [Any] {
                     switch constraint {
                     case .exact(let exactCount):
                         if arrayValue.count != exactCount {
-                            throw ValidationError.wrongItemCount(name, exactCount, arrayValue.count)
+                            throw MacroValidationError.wrongItemCount(name, exactCount, arrayValue.count)
                         }
                     case .range(let range):
                         if !range.contains(arrayValue.count) {
-                            throw ValidationError.itemCountOutOfRange(name, range, arrayValue.count)
+                            throw MacroValidationError.itemCountOutOfRange(name, range, arrayValue.count)
                         }
                     }
                 }
@@ -248,16 +248,16 @@ extension FoundryStructuredOutput {
                 if let stringValue = value as? String {
                     let predicate = NSPredicate(format: "SELF MATCHES %@", regex)
                     if !predicate.evaluate(with: stringValue) {
-                        throw ValidationError.patternMismatch(name, regex)
+                        throw MacroValidationError.patternMismatch(name, regex)
                     }
                 }
             case .anyOf(let allowed):
                 if let stringValue = value as? String, !allowed.contains(stringValue) {
-                    throw ValidationError.invalidEnumValue(name, stringValue, allowed)
+                    throw MacroValidationError.invalidEnumValue(name, stringValue, allowed)
                 }
             case .constant(let expected):
                 if let stringValue = value as? String, stringValue != expected {
-                    throw ValidationError.notEqualToConstant(name, expected, stringValue)
+                    throw MacroValidationError.notEqualToConstant(name, expected, stringValue)
                 }
             }
         }
@@ -265,7 +265,7 @@ extension FoundryStructuredOutput {
 }
 
 /// Validation errors
-internal enum ValidationError: LocalizedError {
+internal enum MacroValidationError: LocalizedError {
     case belowMinimum(String, Int)
     case aboveMaximum(String, Int)
     case outOfRange(String, ClosedRange<Int>)

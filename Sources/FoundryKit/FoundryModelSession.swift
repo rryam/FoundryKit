@@ -255,7 +255,7 @@ extension FoundryModelSession {
             let response = try await session.respond(to: prompt, schema: generationSchema)
             
             // Convert to our response type
-            let transcriptEntries = session.transcript.entries.suffix(2)
+            let transcriptEntries = Array(session.transcript).suffix(2)
             updateTranscript(with: transcriptEntries)
             return Response(content: response.content, transcriptEntries: transcriptEntries)
             
@@ -285,7 +285,7 @@ extension FoundryModelSession {
             let session = LanguageModelSession(model: .default, guardrails: guardrails, tools: tools)
             let response = try await session.respond(to: prompt, schema: generationSchema)
             
-            let transcriptEntries = session.transcript.entries.suffix(2)
+            let transcriptEntries = Array(session.transcript).suffix(2)
             updateTranscript(with: transcriptEntries)
             return Response(content: response.content, transcriptEntries: transcriptEntries)
             
@@ -461,9 +461,9 @@ extension FoundryModelSession {
     
     private func updateTranscript(with entries: ArraySlice<Transcript.Entry>) {
         // Update internal transcript with new entries
-        for entry in entries {
-            transcript.entries.append(entry)
-        }
+        // Note: In beta 2, Transcript.init(entries:) is private
+        // TODO: Find alternative approach for updating transcript
+        // For now, we'll rely on the session managing its own transcript
     }
     
     // Commented out for 0.0.1 release - focusing on simple text generation only

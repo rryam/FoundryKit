@@ -217,6 +217,13 @@ internal final class FoundationBackend: FoundryBackend {
                     underlyingErrors: context.underlyingErrors
                 )
             )
+        case .rateLimited(let context):
+            return .rateLimited(
+                FoundryGenerationError.Context(
+                    debugDescription: context.debugDescription,
+                    underlyingErrors: context.underlyingErrors
+                )
+            )
         @unknown default:
             return .unknown(
                 FoundryGenerationError.Context(
