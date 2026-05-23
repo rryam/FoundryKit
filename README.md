@@ -8,14 +8,6 @@ FoundryKit provides a single, Foundation Models-style API that works with both:
 - **MLX Models**: Open-source models from Hugging Face (Mistral, Llama, Qwen, etc.)
 - **Foundation Models**: Apple's on-device language models (Apple Intelligence)
 
-## Support
-
-Love this project? Check out my books to explore more of AI and iOS development:
-- [Exploring AI for iOS Development](https://academy.rudrank.com/product/ai)
-- [Exploring AI-Assisted Coding for iOS Development](https://academy.rudrank.com/product/ai-assisted-coding)
-
-Your support helps to keep this project growing!
-
 ## Features (v0.0.1)
 
 **Unified API**: Same interface for both MLX and Foundation Models  
